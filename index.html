@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shark Bot Trading Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+    <style>
+        [v-cloak] { display: none; }
+        .markdown-body h1 { font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; }
+        .markdown-body h2 { font-size: 1.3em; font-weight: bold; margin-bottom: 0.5em; margin-top: 1em; }
+        .markdown-body h3 { font-size: 1.1em; font-weight: bold; margin-bottom: 0.5em; margin-top: 0.8em; }
+        .markdown-body p { margin-bottom: 1em; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
+        .markdown-body ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 1em; }
+        .markdown-body strong { font-weight: 600; color: #f3f4f6; }
+        .markdown-body pre { background: #1f2937; padding: 1em; border-radius: 0.5em; overflow-x: auto; margin-bottom: 1em; }
+        .markdown-body code { background: #374151; padding: 0.2em 0.4em; border-radius: 0.25em; font-size: 0.9em; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        .metric-card { transition: all 0.2s; }
+        .metric-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans">
+    <div id="app" v-cloak class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-gray-800 border-b border-gray-700 p-4 shadow-lg sticky top-0 z-50">
+            <div class="max-w-[1800px] mx-auto flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold tracking-tight text-white">Shark Bot <span class="text-emerald-400">Trading Dashboard</span></h1>
+                        <p class="text-xs text-gray-400">Real-time AI Trading Analytics</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 bg-gray-700 rounded-lg p-2 px-3 border border-gray-600">
+                        <span class="text-xs text-gray-400 uppercase font-semibold">API</span>
+                        <input type="text" v-model="baseUrl" class="bg-transparent border-none focus:ring-0 text-sm w-48 text-white placeholder-gray-500">
+                    </div>
+                    <button @click="fetchData" :disabled="loading" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg">
+                        <svg v-if="loading" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span v-else>Actualizar</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 bg-gray-900 p-6">
+            <div class="max-w-[1800px] mx-auto space-y-6">
+                
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="metric-card bg-gradient-to-br from-gray-800 to-gray-800/50 rounded-xl p-5 border border-gray-700 shadow-xl">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-gray-400 text-sm font-medium">Balance Total</span>
+                            <div class="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-white mb-1">${{ latestExecution ? formatMoney(latestExecution.summary?.total_balance) : '0.00' }}</div>
+                        <div class="text-xs text-gray-500">Disponible: ${{ latestExecution ? formatMoney(latestExecution.summary?.available_balance) : '0.00' }}</div>
+                    </div>
+
+                    <div class="metric-card bg-gradient-to-br from-gray-800 to-gray-800/50 rounded-xl p-5 border border-gray-700 shadow-xl">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-gray-400 text-sm font-medium">PnL del Día</span>
+                            <div class="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                                <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div :class="getPnlColorClass(latestExecution?.summary?.daily_pnl)" class="text-3xl font-bold mb-1">
+                            ${{ latestExecution ? formatMoney(latestExecution.summary?.daily_pnl) : '0.00' }}
+                        </div>
+                        <div class="text-xs text-gray-500">{{ latestExecution ? latestExecution.summary?.trade_count : 0 }} operaciones</div>
+                    </div>
+
+                    <div class="metric-card bg-gradient-to-br from-gray-800 to-gray-800/50 rounded-xl p-5 border border-gray-700 shadow-xl">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-gray-400 text-sm font-medium">Win Rate</span>
+                            <div class="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-white mb-1">{{ latestExecution ? latestExecution.summary?.win_rate.toFixed(1) : '0.0' }}%</div>
+                        <div class="text-xs text-gray-500" v-if="latestExecutionDetails?.daily_pnl">
+                            {{ latestExecutionDetails.daily_pnl.winning_trades }}W / {{ latestExecutionDetails.daily_pnl.losing_trades }}L
+                        </div>
+                    </div>
+
+                    <div class="metric-card bg-gradient-to-br from-gray-800 to-gray-800/50 rounded-xl p-5 border border-gray-700 shadow-xl">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-gray-400 text-sm font-medium">Posiciones Abiertas</span>
+                            <div class="w-8 h-8 bg-yellow-500/10 rounded-lg flex items-center justify-center">
+                                <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="text-3xl font-bold text-white mb-1">{{ latestExecution ? latestExecution.summary?.open_positions_count : 0 }}</div>
+                        <div class="text-xs text-gray-500">Activas ahora</div>
+                    </div>
+                </div>
+
+                <!-- Time Filters -->
+                <div class="flex items-center gap-3 bg-gray-800/50 rounded-xl p-4 border border-gray-700">
+                    <span class="text-sm text-gray-400 font-medium">Período:</span>
+                    <div class="flex gap-2">
+                        <button @click="setFilter('24h')" :class="{'bg-emerald-600 text-white': activeFilter === '24h', 'bg-gray-700 text-gray-300 hover:bg-gray-600': activeFilter !== '24h'}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all shadow">24 Horas</button>
+                        <button @click="setFilter('7d')" :class="{'bg-emerald-600 text-white': activeFilter === '7d', 'bg-gray-700 text-gray-300 hover:bg-gray-600': activeFilter !== '7d'}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all shadow">7 Días</button>
+                        <button @click="setFilter('30d')" :class="{'bg-emerald-600 text-white': activeFilter === '30d', 'bg-gray-700 text-gray-300 hover:bg-gray-600': activeFilter !== '30d'}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all shadow">30 Días</button>
+                        <button @click="setFilter('all')" :class="{'bg-emerald-600 text-white': activeFilter === 'all', 'bg-gray-700 text-gray-300 hover:bg-gray-600': activeFilter !== 'all'}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all shadow">Todo</button>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Balance Chart -->
+                    <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl">
+                        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <span class="w-1 h-6 bg-emerald-500 rounded"></span>
+                            Evolución del Balance
+                        </h3>
+                        <div class="h-80">
+                            <canvas id="balanceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Win Rate Chart -->
+                    <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl">
+                        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <span class="w-1 h-6 bg-purple-500 rounded"></span>
+                            Rendimiento Diario
+                        </h3>
+                        <div class="h-80">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- PnL Chart -->
+                    <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl">
+                        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <span class="w-1 h-6 bg-blue-500 rounded"></span>
+                            PnL Acumulado
+                        </h3>
+                        <div class="h-80">
+                            <canvas id="pnlChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Trade Count Chart -->
+                    <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl">
+                        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <span class="w-1 h-6 bg-yellow-500 rounded"></span>
+                            Actividad de Trading
+                        </h3>
+                        <div class="h-80">
+                            <canvas id="activityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Market Data & Prompts & Agent Analysis -->
+                <div class="grid grid-cols-1 gap-6">
+                    <!-- Market Data & System Prompt Row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Market Data -->
+                        <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl lg:col-span-1">
+                            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                <span class="w-1 h-6 bg-cyan-500 rounded"></span>
+                                Datos de Mercado
+                            </h3>
+                            <div v-if="latestExecutionDetails?.market_data" class="space-y-4 max-h-96 overflow-y-auto">
+                                <div v-for="(data, currency) in latestExecutionDetails.market_data" :key="currency" class="bg-gray-700/30 rounded-lg p-4 border border-gray-600">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="font-bold text-lg text-white">{{ currency }}/USDT</span>
+                                        <span class="text-emerald-400 font-mono text-lg">${{ formatMoney(data.price) }}</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2 text-xs">
+                                        <div class="flex flex-col">
+                                            <span class="text-gray-500">RSI(14)</span>
+                                            <span :class="getRsiColor(data.rsi_14)" class="font-mono font-semibold">{{ data.rsi_14?.toFixed(2) }}</span>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="text-gray-500">MACD</span>
+                                            <span :class="data.macd > 0 ? 'text-emerald-400' : 'text-red-400'" class="font-mono font-semibold">{{ data.macd?.toFixed(2) }}</span>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="text-gray-500">EMA(9)</span>
+                                            <span class="text-gray-300 font-mono">{{ data.ema_9?.toFixed(2) }}</span>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="text-gray-500">Funding</span>
+                                            <span :class="data.funding_rate < 0 ? 'text-red-400' : 'text-emerald-400'" class="font-mono font-semibold">{{ (data.funding_rate * 100)?.toFixed(4) }}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-else class="text-center py-8 text-gray-500">
+                                <p>No hay datos de mercado disponibles</p>
+                            </div>
+                        </div>
+
+                        <!-- System Prompt -->
+                        <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl lg:col-span-2">
+                            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                <span class="w-1 h-6 bg-violet-500 rounded"></span>
+                                System Prompt (Contexto del Agente)
+                            </h3>
+                            <div v-if="latestExecutionDetails?.system_prompt" class="text-xs text-gray-300 leading-relaxed max-h-96 overflow-y-auto bg-gray-900/50 rounded-lg p-4 border border-gray-700 font-mono whitespace-pre-wrap">{{ latestExecutionDetails.system_prompt }}</div>
+                            <div v-else class="text-center py-8 text-gray-500">
+                                <div class="animate-pulse">
+                                    <p>No hay prompt disponible</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agent Analysis Full Width -->
+                    <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl">
+                        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <span class="w-1 h-6 bg-orange-500 rounded"></span>
+                            Análisis del Agente IA
+                        </h3>
+                        <div v-if="latestExecutionDetails?.agent_response" class="markdown-body text-sm text-gray-300 leading-relaxed max-h-96 overflow-y-auto bg-gray-900/50 rounded-lg p-4 border border-gray-700" v-html="renderMarkdown(latestExecutionDetails.agent_response)"></div>
+                        <div v-else class="text-center py-8 text-gray-500">
+                            <div class="animate-pulse">
+                                <p>Cargando análisis...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Open Positions -->
+                <div v-if="latestExecutionDetails?.open_positions?.length > 0" class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="w-1 h-6 bg-red-500 rounded"></span>
+                        Posiciones Abiertas
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div v-for="position in latestExecutionDetails.open_positions" :key="position.symbol" class="bg-gray-700/30 rounded-lg p-4 border border-gray-600">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="font-bold text-white">{{ position.symbol }}</span>
+                                <span :class="position.side === 'LONG' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'" class="px-2 py-1 rounded text-xs font-bold">
+                                    {{ position.side }}
+                                </span>
+                            </div>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Entrada:</span>
+                                    <span class="text-white font-mono">${{ position.entry_price }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Cantidad:</span>
+                                    <span class="text-white font-mono">{{ position.quantity }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Leverage:</span>
+                                    <span class="text-white font-mono">{{ position.leverage }}x</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">PnL No Realizado:</span>
+                                    <span :class="position.unrealized_pnl >= 0 ? 'text-emerald-400' : 'text-red-400'" class="font-mono font-semibold">
+                                        ${{ position.unrealized_pnl?.toFixed(2) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Operations Log -->
+                <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <span class="w-1 h-6 bg-indigo-500 rounded"></span>
+                        Registro de Operaciones
+                    </h3>
+                    <div class="space-y-2 max-h-96 overflow-y-auto">
+                        <div v-for="op in operations.slice(0, 20)" :key="op.id" class="bg-gray-700/30 rounded-lg p-3 border border-gray-600 hover:bg-gray-700/50 transition-colors flex items-center justify-between">
+                            <div class="flex items-center gap-3 flex-1">
+                                <span :class="{'bg-emerald-500/20 text-emerald-400': op.operation_type === 'OPEN_LONG', 'bg-red-500/20 text-red-400': op.operation_type === 'OPEN_SHORT', 'bg-blue-500/20 text-blue-400': op.operation_type === 'CLOSE_POSITION'}" class="px-2 py-1 rounded text-xs font-bold whitespace-nowrap">
+                                    {{ op.operation_type.replace('_', ' ') }}
+                                </span>
+                                <span class="font-bold text-white">{{ op.currency }}</span>
+                                <span v-if="op.entry_price" class="text-gray-400 text-sm">@ ${{ op.entry_price }}</span>
+                                <span v-if="op.quantity" class="text-gray-400 text-sm">Qty: {{ op.quantity }}</span>
+                                <span :class="{'text-emerald-400': op.status === 'SUCCESS', 'text-red-400': op.status === 'ERROR', 'text-yellow-400': op.status === 'PENDING'}" class="text-xs font-semibold">
+                                    {{ op.status }}
+                                </span>
+                            </div>
+                            <span class="text-xs text-gray-500 whitespace-nowrap ml-4">{{ formatDateTime(op.created_at) }}</span>
+                        </div>
+                        <div v-if="operations.length === 0" class="text-center py-8 text-gray-500">
+                            No hay operaciones registradas
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted, watch } = Vue;
+
+        createApp({
+            setup() {
+                const loading = ref(false);
+                const executions = ref([]);
+                const operations = ref([]);
+                const latestExecution = ref(null);
+                const latestExecutionDetails = ref(null);
+                
+                const primaryUrl = 'https://trading.macaco.ai';
+                const fallbackUrl = 'http://localhost:8099';
+                const baseUrl = ref(localStorage.getItem('shark_bot_base_url') || primaryUrl);
+                
+                const activeFilter = ref('7d');
+                const filters = ref({
+                    startDate: moment().subtract(7, 'days').startOf('day'),
+                    endDate: moment().endOf('day')
+                });
+
+                const chartInstances = ref({});
+
+                watch(baseUrl, (newVal) => localStorage.setItem('shark_bot_base_url', newVal));
+
+                const setFilter = (period) => {
+                    activeFilter.value = period;
+                    const end = moment().endOf('day');
+                    let start;
+                    
+                    switch(period) {
+                        case '24h': start = moment().subtract(24, 'hours'); break;
+                        case '7d': start = moment().subtract(7, 'days').startOf('day'); break;
+                        case '30d': start = moment().subtract(30, 'days').startOf('day'); break;
+                        case 'all': start = moment('2020-01-01'); break;
+                    }
+                    
+                    filters.value = { startDate: start, endDate: end };
+                    updateCharts();
+                };
+
+                const fetchData = async (retry = true) => {
+                    loading.value = true;
+                    
+                    try {
+                        const api = axios.create({ baseURL: baseUrl.value });
+                        
+                        const execRes = await api.get('/executions/');
+                        executions.value = execRes.data.results || execRes.data;
+                        executions.value.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+                        const opsRes = await api.get('/operations/');
+                        operations.value = opsRes.data.results || opsRes.data;
+                        operations.value.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                        if (executions.value.length > 0) {
+                            latestExecution.value = executions.value[executions.value.length - 1];
+                            const detailRes = await api.get(`/executions/${latestExecution.value.id}/`);
+                            latestExecutionDetails.value = detailRes.data;
+                        }
+
+                        updateCharts();
+
+                    } catch (error) {
+                        console.error(`Error fetching data from ${baseUrl.value}:`, error);
+                        
+                        if (retry && baseUrl.value === primaryUrl) {
+                            console.log(`Switching to fallback URL: ${fallbackUrl}`);
+                            baseUrl.value = fallbackUrl;
+                            await fetchData(false);
+                            return;
+                        }
+                        
+                        alert(`Failed to fetch data from ${baseUrl.value}. Check console.`);
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const updateCharts = () => {
+                    const dataPoints = executions.value.filter(e => {
+                        const date = moment(e.created_at);
+                        return date.isSameOrAfter(filters.value.startDate) && date.isSameOrBefore(filters.value.endDate);
+                    });
+
+                    updateBalanceChart(dataPoints);
+                    updatePerformanceChart(dataPoints);
+                    updatePnlChart(dataPoints);
+                    updateActivityChart(dataPoints);
+                };
+
+                const updateBalanceChart = (dataPoints) => {
+                    const ctx = document.getElementById('balanceChart')?.getContext('2d');
+                    if (!ctx) return;
+
+                    if (chartInstances.value.balance) chartInstances.value.balance.destroy();
+
+                    chartInstances.value.balance = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: dataPoints.map(e => e.created_at),
+                            datasets: [{
+                                label: 'Balance Total',
+                                data: dataPoints.map(e => e.summary?.total_balance || 0),
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                tension: 0.4,
+                                fill: true,
+                                pointRadius: 2,
+                                pointHoverRadius: 5
+                            }]
+                        },
+                        options: getChartOptions('Balance (USDT)')
+                    });
+                };
+
+                const updatePerformanceChart = (dataPoints) => {
+                    const ctx = document.getElementById('performanceChart')?.getContext('2d');
+                    if (!ctx) return;
+
+                    if (chartInstances.value.performance) chartInstances.value.performance.destroy();
+
+                    chartInstances.value.performance = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: dataPoints.map(e => e.created_at),
+                            datasets: [{
+                                label: 'Win Rate',
+                                data: dataPoints.map(e => e.summary?.win_rate || 0),
+                                borderColor: '#a855f7',
+                                backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                                tension: 0.4,
+                                fill: true,
+                                pointRadius: 2,
+                                pointHoverRadius: 5,
+                                yAxisID: 'y'
+                            }]
+                        },
+                        options: getChartOptions('Win Rate (%)', 0, 100)
+                    });
+                };
+
+                const updatePnlChart = (dataPoints) => {
+                    const ctx = document.getElementById('pnlChart')?.getContext('2d');
+                    if (!ctx) return;
+
+                    if (chartInstances.value.pnl) chartInstances.value.pnl.destroy();
+
+                    chartInstances.value.pnl = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: dataPoints.map(e => e.created_at),
+                            datasets: [{
+                                label: 'PnL Diario',
+                                data: dataPoints.map(e => e.summary?.daily_pnl || 0),
+                                backgroundColor: dataPoints.map(e => (e.summary?.daily_pnl || 0) >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
+                                borderColor: dataPoints.map(e => (e.summary?.daily_pnl || 0) >= 0 ? '#10b981' : '#ef4444'),
+                                borderWidth: 1
+                            }]
+                        },
+                        options: getChartOptions('PnL (USDT)')
+                    });
+                };
+
+                const updateActivityChart = (dataPoints) => {
+                    const ctx = document.getElementById('activityChart')?.getContext('2d');
+                    if (!ctx) return;
+
+                    if (chartInstances.value.activity) chartInstances.value.activity.destroy();
+
+                    chartInstances.value.activity = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: dataPoints.map(e => e.created_at),
+                            datasets: [{
+                                label: 'Número de Trades',
+                                data: dataPoints.map(e => e.summary?.trade_count || 0),
+                                backgroundColor: 'rgba(234, 179, 8, 0.8)',
+                                borderColor: '#eab308',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: getChartOptions('Trades', 0)
+                    });
+                };
+
+                const getChartOptions = (yLabel, suggestedMin, suggestedMax) => ({
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: '#9ca3af', font: { size: 11 } } },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                            titleColor: '#f3f4f6',
+                            bodyColor: '#d1d5db',
+                            borderColor: '#374151',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: { unit: 'hour', displayFormats: { hour: 'MMM D, HH:mm' } },
+                            grid: { color: '#374151', drawBorder: false },
+                            ticks: { color: '#9ca3af', font: { size: 10 } }
+                        },
+                        y: {
+                            grid: { color: '#374151', drawBorder: false },
+                            ticks: { color: '#9ca3af', font: { size: 10 } },
+                            title: { display: true, text: yLabel, color: '#9ca3af' },
+                            suggestedMin: suggestedMin,
+                            suggestedMax: suggestedMax
+                        }
+                    }
+                });
+
+                const formatMoney = (val) => val ? Number(val).toFixed(2) : '0.00';
+                const formatDateTime = (date) => moment(date).format('MMM D, HH:mm');
+                const getPnlColorClass = (val) => val > 0 ? 'text-emerald-400' : (val < 0 ? 'text-red-400' : 'text-gray-400');
+                const getRsiColor = (rsi) => {
+                    if (rsi >= 70) return 'text-red-400';
+                    if (rsi <= 30) return 'text-emerald-400';
+                    return 'text-gray-300';
+                };
+                const renderMarkdown = (text) => text ? marked.parse(text) : '';
+
+                onMounted(() => {
+                    fetchData();
+                });
+
+                return {
+                    baseUrl,
+                    loading,
+                    executions,
+                    operations,
+                    latestExecution,
+                    latestExecutionDetails,
+                    activeFilter,
+                    fetchData,
+                    setFilter,
+                    formatMoney,
+                    formatDateTime,
+                    getPnlColorClass,
+                    getRsiColor,
+                    renderMarkdown
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
