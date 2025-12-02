@@ -379,18 +379,27 @@
                         
                         // Fetch more data to show history (default page size is 20)
                         const execRes = await api.get('/executions/?page_size=100');
-                        const rawExecutions = execRes.data.results || execRes.data;
-                        
-                        // API returns descending order (newest first). 
-                        // Take the first one as latest execution BEFORE sorting for charts.
-                        if (rawExecutions.length > 0) {
-                            latestExecution.value = rawExecutions[0];
+                        const rawExecutions = Array.isArray(execRes.data.results)
+                            ? execRes.data.results
+                            : Array.isArray(execRes.data)
+                              ? execRes.data
+                              : [];
+
+                        // Prefer the most recent successful execution so balance isn't zeroed out by failed runs.
+                        const successfulExecutions = rawExecutions.filter(
+                            (e) => e.status === 'SUCCESS' && e.summary
+                        );
+                        const executionsForCards = successfulExecutions.length ? successfulExecutions : rawExecutions;
+
+                        if (executionsForCards.length > 0) {
+                            latestExecution.value = executionsForCards[0];
                             const detailRes = await api.get(`/executions/${latestExecution.value.id}/`);
                             latestExecutionDetails.value = detailRes.data;
                         }
 
-                        // Create a copy for charts and sort ascending (oldest to newest)
-                        executions.value = [...rawExecutions].sort((a, b) => {
+                        // Use only successful executions for charts to avoid zero dips from failed runs.
+                        const chartExecutions = successfulExecutions.length ? successfulExecutions : rawExecutions;
+                        executions.value = [...chartExecutions].sort((a, b) => {
                             // Parse with explicit format matching Django's DATETIME_FORMAT
                             return moment(a.created_at, "YYYY-MM-DD HH:mm").diff(moment(b.created_at, "YYYY-MM-DD HH:mm"));
                         });
