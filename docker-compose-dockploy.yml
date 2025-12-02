@@ -1,17 +1,4 @@
 services:
-  postgres:
-    image: postgres:17-alpine
-    container_name: shark-bot-postgres-container
-    env_file: .env
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres_user", "-d", "app_db"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-    expose:
-      - "5432"
   api:
     env_file: .env
     container_name: shark-bot-api-container
@@ -24,13 +11,7 @@ services:
     command: sh -c "sleep 5 && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
     stdin_open: true
     tty: true
-    depends_on:
-      postgres:
-        condition: service_healthy
     volumes:
       - .:/app
     expose:
       - "8000"
-
-volumes:
-  pgdata: {}
