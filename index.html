@@ -31,6 +31,10 @@
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans">
+    <script>
+        // Django context variable passed to JavaScript
+        window.DJANGO_API_BASE_URL = "{{ api_base_url }}";
+    </script>
     {% verbatim %}
     <div id="app" v-cloak class="min-h-screen flex flex-col">
         <!-- Header -->
@@ -49,10 +53,6 @@
                 </div>
                 
                 <div class="flex items-center gap-4">
-                    <div class="flex items-center gap-2 bg-gray-700 rounded-lg p-2 px-3 border border-gray-600">
-                        <span class="text-xs text-gray-400 uppercase font-semibold">API</span>
-                        <input type="text" v-model="baseUrl" class="bg-transparent border-none focus:ring-0 text-sm w-48 text-white placeholder-gray-500">
-                    </div>
                     <button @click="fetchData" :disabled="loading" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg">
                         <svg v-if="loading" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -335,10 +335,17 @@
                 const operations = ref([]);
                 const latestExecution = ref(null);
                 const latestExecutionDetails = ref(null);
-                
-                const primaryUrl = 'https://trading.macaco.ai';
-                const fallbackUrl = 'http://localhost:8099';
-                const baseUrl = ref(localStorage.getItem('shark_bot_base_url') || primaryUrl);
+
+                // Use Django-provided API URL or fallback to current origin.
+                // If the template placeholder wasn't rendered (e.g. served as a static file),
+                // avoid using the raw "{{ api_base_url }}" string as a base URL.
+                const resolveApiBaseUrl = () => {
+                    const raw = window.DJANGO_API_BASE_URL;
+                    if (!raw || typeof raw !== 'string') return window.location.origin;
+                    if (raw.includes("{{")) return window.location.origin;
+                    return raw;
+                };
+                const baseUrl = ref(resolveApiBaseUrl());
                 
                 const activeFilter = ref('7d');
                 const filters = ref({
@@ -347,8 +354,6 @@
                 });
 
                 const chartInstances = ref({});
-
-                watch(baseUrl, (newVal) => localStorage.setItem('shark_bot_base_url', newVal));
 
                 const setFilter = (period) => {
                     activeFilter.value = period;
@@ -366,39 +371,39 @@
                     updateCharts();
                 };
 
-                const fetchData = async (retry = true) => {
+                const fetchData = async () => {
                     loading.value = true;
-                    
+
                     try {
                         const api = axios.create({ baseURL: baseUrl.value });
                         
-                        const execRes = await api.get('/executions/');
-                        executions.value = execRes.data.results || execRes.data;
-                        executions.value.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-
-                        const opsRes = await api.get('/operations/');
-                        operations.value = opsRes.data.results || opsRes.data;
-                        operations.value.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-                        if (executions.value.length > 0) {
-                            latestExecution.value = executions.value[executions.value.length - 1];
+                        // Fetch more data to show history (default page size is 20)
+                        const execRes = await api.get('/executions/?page_size=100');
+                        const rawExecutions = execRes.data.results || execRes.data;
+                        
+                        // API returns descending order (newest first). 
+                        // Take the first one as latest execution BEFORE sorting for charts.
+                        if (rawExecutions.length > 0) {
+                            latestExecution.value = rawExecutions[0];
                             const detailRes = await api.get(`/executions/${latestExecution.value.id}/`);
                             latestExecutionDetails.value = detailRes.data;
                         }
+
+                        // Create a copy for charts and sort ascending (oldest to newest)
+                        executions.value = [...rawExecutions].sort((a, b) => {
+                            // Parse with explicit format matching Django's DATETIME_FORMAT
+                            return moment(a.created_at, "YYYY-MM-DD HH:mm").diff(moment(b.created_at, "YYYY-MM-DD HH:mm"));
+                        });
+
+                        const opsRes = await api.get('/operations/?page_size=100');
+                        operations.value = opsRes.data.results || opsRes.data;
+                        operations.value.sort((a, b) => moment(b.created_at, "YYYY-MM-DD HH:mm").diff(moment(a.created_at, "YYYY-MM-DD HH:mm")));
 
                         updateCharts();
 
                     } catch (error) {
                         console.error(`Error fetching data from ${baseUrl.value}:`, error);
-                        
-                        if (retry && baseUrl.value === primaryUrl) {
-                            console.log(`Switching to fallback URL: ${fallbackUrl}`);
-                            baseUrl.value = fallbackUrl;
-                            await fetchData(false);
-                            return;
-                        }
-                        
-                        alert(`Failed to fetch data from ${baseUrl.value}. Check console.`);
+                        alert(`Failed to fetch data from ${baseUrl.value}. Check console for details.`);
                     } finally {
                         loading.value = false;
                     }
@@ -406,7 +411,7 @@
 
                 const updateCharts = () => {
                     const dataPoints = executions.value.filter(e => {
-                        const date = moment(e.created_at);
+                        const date = moment(e.created_at, "YYYY-MM-DD HH:mm");
                         return date.isSameOrAfter(filters.value.startDate) && date.isSameOrBefore(filters.value.endDate);
                     });
 
@@ -425,7 +430,7 @@
                     chartInstances.value.balance = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: dataPoints.map(e => e.created_at),
+                            labels: dataPoints.map(e => moment(e.created_at, "YYYY-MM-DD HH:mm").toISOString()),
                             datasets: [{
                                 label: 'Balance Total',
                                 data: dataPoints.map(e => e.summary?.total_balance || 0),
@@ -450,7 +455,7 @@
                     chartInstances.value.performance = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: dataPoints.map(e => e.created_at),
+                            labels: dataPoints.map(e => moment(e.created_at, "YYYY-MM-DD HH:mm").toISOString()),
                             datasets: [{
                                 label: 'Win Rate',
                                 data: dataPoints.map(e => e.summary?.win_rate || 0),
@@ -476,7 +481,7 @@
                     chartInstances.value.pnl = new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels: dataPoints.map(e => e.created_at),
+                            labels: dataPoints.map(e => moment(e.created_at, "YYYY-MM-DD HH:mm").toISOString()),
                             datasets: [{
                                 label: 'PnL Diario',
                                 data: dataPoints.map(e => e.summary?.daily_pnl || 0),
@@ -498,7 +503,7 @@
                     chartInstances.value.activity = new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels: dataPoints.map(e => e.created_at),
+                            labels: dataPoints.map(e => moment(e.created_at, "YYYY-MM-DD HH:mm").toISOString()),
                             datasets: [{
                                 label: 'Número de Trades',
                                 data: dataPoints.map(e => e.summary?.trade_count || 0),

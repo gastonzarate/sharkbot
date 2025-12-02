@@ -19,7 +19,7 @@ services:
       target: base
       args:
         ENVIRONMENT: ${ENVIRONMENT}
-    command: sh -c "sleep 5 && python manage.py runserver 0.0.0.0:8000"
+    command: sh -c "sleep 5 && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
     stdin_open: true
     tty: true
     depends_on:
