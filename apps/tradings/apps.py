@@ -21,7 +21,7 @@ class TradingsConfig(AppConfig):
 
         from apscheduler.schedulers.background import BackgroundScheduler
 
-        if not settings.DEBUG:
+        if settings.DEBUG:
             return
 
         from apps.tradings.scheduler import run_trading_workflow
