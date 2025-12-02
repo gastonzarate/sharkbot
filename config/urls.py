@@ -6,8 +6,11 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenBlacklistView, TokenObtainPairView, TokenRefreshView
 
+from config.views import HomePageView
+
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("", HomePageView.as_view(), name="home"),
     path("", include(("tradings.urls", "tradings"))),
     path("", include(("accounts.urls", "accounts"))),
     path("api/auth/login/", TokenObtainPairView.as_view()),

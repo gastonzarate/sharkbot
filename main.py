@@ -1,10 +1,9 @@
 import asyncio
 from datetime import datetime
 
+from genflows.trading.workflow import TradingWorkflow
 from langfuse import get_client
 from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
-
-from genflows.trading.workflow import TradingWorkflow
 
 
 async def run_workflow():

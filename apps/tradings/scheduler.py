@@ -33,7 +33,7 @@ async def execute_workflow():
         workflow = TradingFuturesWorkflow(timeout=180)
         logger.info("✅ Trading workflow initialized")
 
-        handler = workflow.run(currencies=["BTC", "ETH"])
+        handler = workflow.run(currencies=["BTC", "ETH", "BFUSD", "BNB", "USDC"])
     langfuse.flush()
 
     return await handler

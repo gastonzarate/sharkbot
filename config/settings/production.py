@@ -1,36 +1,6 @@
 # flake8: noqa
-from pathlib import Path
-
-from storages.backends.s3boto3 import S3Boto3Storage
 
 from .base import *
-
-# # STORAGE
-# ------------------------------------------------------------------------------
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-
-BASE_BUCKET_NAME = env.str("BASE_BUCKET_NAME", default="")
-BASE_S3_SETTINGS = {
-    "querystring_auth": True,
-    "custom_domain": None,
-    "bucket_name": BASE_BUCKET_NAME,
-}
-
-STORAGE_SYSTEM = S3Boto3Storage(**BASE_S3_SETTINGS)
-BASE_DIR = Path(__file__).resolve().parent.parent
-STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
-STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-    },
-}
-STATICFILES_DIRS = [
-    str(ROOT_DIR / Path("staticfiles")),
-]
-# Ensure static files are handled properly
-WHITENOISE_MANIFEST_STRICT = False
-WHITENOISE_USE_FINDERS = True
 
 # # SECURITY SETTINGS
 # ------------------------------------------------------------------------------
@@ -48,14 +18,6 @@ SECURE_SSL_REDIRECT = True
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
-
-# # AWS
-# ------------------------------------------------------------------------------
-AWS_STORAGE_BUCKET_NAME = BASE_BUCKET_NAME
-_AWS_EXPIRY = 60 * 60 * 24 * 7
-AWS_S3_OBJECT_PARAMETERS = {
-    "CacheControl": f"max-age={_AWS_EXPIRY}, s-maxage={_AWS_EXPIRY}, must-revalidate",
-}
 
 # # SENTRY
 # ------------------------------------------------------------------------------

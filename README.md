@@ -6,7 +6,7 @@ An AI-powered autonomous trading bot for Binance Futures that uses Claude AI to 
 ![Django](https://img.shields.io/badge/django-5.2-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-## 🎯 What is Shark Bot?
+## 🎯 What is SharkBot?
 
 Shark Bot is a sophisticated autonomous cryptocurrency trading system that combines advanced AI reasoning with professional risk management. It continuously monitors multiple cryptocurrency markets, performs technical analysis, and executes trades on Binance Futures (USDT-M) with strict risk controls.
 
@@ -47,7 +47,7 @@ The bot uses a workflow-based architecture built with LlamaIndex:
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/macacoai/trading.git
+   git clone https://github.com/macacoai/sharkbot.git
    cd trading
    ```
 
@@ -75,15 +75,6 @@ The bot uses a workflow-based architecture built with LlamaIndex:
    # Binance Trading Configuration
    BINANCE_API_KEY=your_binance_api_key
    BINANCE_API_SECRET=your_binance_api_secret
-   BINANCE_TESTNET=true  
-
-   # Trading Configuration
-   TRADING_ENABLED=true
-   TRADING_INTERVAL_SECONDS=900  # 15 minutes
-   TRADING_MAX_POSITION_SIZE_USD=1000
-   TRADING_MAX_LEVERAGE=5
-   TRADING_RISK_PER_TRADE_PCT=2.0
-   TRADING_COINS=BTC,ETH,SOL,BNB,XRP,DOGE
 
    # Database
    POSTGRES_USER=postgres_user
@@ -161,35 +152,9 @@ Access the HTML dashboard at `http://localhost:8099/` (or view `index.html`) to 
 - Open positions
 - AI agent analysis and reasoning
 
-## 🔧 Configuration
-
-### Trading Parameters
-
-Configure trading behavior via environment variables:
-
-| Variable                        | Description                       | Default                    |
-| ------------------------------- | --------------------------------- | -------------------------- |
-| `TRADING_ENABLED`               | Master switch for trading         | `true`                     |
-| `TRADING_INTERVAL_SECONDS`      | Execution frequency               | `900` (15 min)             |
-| `TRADING_MAX_POSITION_SIZE_USD` | Max USD per position              | `1000`                     |
-| `TRADING_MAX_LEVERAGE`          | Maximum leverage allowed          | `5`                        |
-| `TRADING_RISK_PER_TRADE_PCT`    | Max risk per trade (% of account) | `2.0`                      |
-| `TRADING_COINS`                 | Coins to trade (comma-separated)  | `BTC,ETH,SOL,BNB,XRP,DOGE` |
-
-### Risk Management Rules
-
-The bot enforces strict risk management (configured in the AI prompt):
-
-- ✅ **Required stop-loss** on every position
-- ✅ **Required take-profit** target on every position
-- ✅ **Position size limits** based on account value
-- ✅ **Leverage caps** to prevent over-leverage
-- ✅ **Maximum open positions** to ensure diversification
-- ✅ **Minimum confidence threshold** (>70%) for trades
-
 ### Customizing the AI Prompt
 
-The trading strategy is defined in `example_prompt_trading.txt`. You can customize:
+The trading strategy is defined in `apps/genflows/prompts/trading_futures/trad.txt`. You can customize:
 
 - Risk parameters
 - Technical indicators
@@ -220,31 +185,6 @@ The admin interface provides:
 - Trade logs with entry/exit prices and PnL
 - Agent responses and strategies
 - Error logs and debugging information
-
-## ⚠️ Safety & Best Practices
-
-### Start with Testnet
-
-**ALWAYS TEST WITH BINANCE TESTNET FIRST!**
-
-1. Create a testnet account: https://testnet.binancefuture.com
-2. Get testnet API keys
-3. Set `BINANCE_TESTNET=true` in `.env`
-4. Run the bot and verify behavior
-5. Only switch to production after thorough testing
-
-### Production Deployment
-
-When ready for production:
-
-1. Set `BINANCE_TESTNET=false`
-2. Use production API keys
-3. Start with conservative parameters:
-   - Low position sizes
-   - Lower leverage (2-3x)
-   - Small risk per trade (1-2%)
-4. Monitor closely for first few days
-5. Gradually increase parameters as confidence grows
 
 ### Risk Warnings
 
@@ -284,12 +224,6 @@ shark-bot/
 - **`BinanceTools`**: MCP tools for AI agent to execute trades
 - **`Agent`**: AI agent configuration and prompt rendering
 - **`TradingWorkflowExecution`**: Django model for execution storage
-
-### Running Tests
-
-```bash
-pytest
-```
 
 ### Code Quality
 
