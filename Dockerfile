@@ -1,4 +1,4 @@
-FROM --platform=linux/arm64 python:3.12-slim AS base
+FROM python:3.12-slim AS base
 # Build stage
 
 # Set work directory

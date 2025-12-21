@@ -340,3 +340,5 @@ repopack-output.txt
 coder.py
 apps/test_cases/serializers/chat.py
 macaco.pem
+
+trendradar/output

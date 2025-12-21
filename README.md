@@ -20,6 +20,7 @@ Shark Bot is a sophisticated autonomous cryptocurrency trading system that combi
 - **📈 Performance Tracking**: Daily PnL, win rate, and trade history monitoring
 - **🎛️ Django Admin Dashboard**: Full control and monitoring through web interface
 - **🔍 Observability**: Integrated with Langfuse for AI workflow tracing and monitoring
+- **📰 News Aggregation**: Integrated TrendRadar for real-time crypto news from 35+ platforms
 - **🐳 Docker Support**: Easy deployment with Docker Compose
 
 ## 🏗️ Architecture
@@ -105,6 +106,46 @@ The bot uses a workflow-based architecture built with LlamaIndex:
    # Start the server
    python manage.py runserver
    ```
+
+### TrendRadar Integration (News Aggregation)
+
+SharkBot integrates with [TrendRadar](https://github.com/sansan0/TrendRadar), a news aggregation tool that monitors 35+ platforms for crypto and trading-related news.
+
+**What it provides:**
+- Real-time news aggregation from Chinese platforms (Weibo, Douyin, Baidu, etc.)
+- Keyword filtering for crypto/trading topics (BTC, ETH, SOL, etc.)
+- SQLite database storage for news data
+- Web interface at `http://localhost:8080`
+- Optional AI analysis via MCP server
+
+**Included Services:**
+- `trend-radar`: Main news crawler service
+- `trend-radar-mcp`: AI analysis service (optional)
+
+**Configuration:**
+- Keywords: Edit `trendradar/config/frequency_words.txt`
+- Settings: Edit `trendradar/config/config.yaml`
+- Data storage: `trendradar/output/` (SQLite, TXT, HTML)
+
+**Accessing News Data:**
+
+From your Python code, you can read the SQLite database:
+
+```python
+import sqlite3
+from pathlib import Path
+
+# Find the latest database file
+output_dir = Path("trendradar/output")
+db_files = list(output_dir.glob("**/*.db"))
+latest_db = max(db_files, key=lambda p: p.stat().st_mtime)
+
+# Connect and query
+conn = sqlite3.connect(latest_db)
+cursor = conn.cursor()
+cursor.execute("SELECT * FROM news WHERE created_at > datetime('now', '-1 hour')")
+recent_news = cursor.fetchall()
+
 
 ## 📖 Usage
 

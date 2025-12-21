@@ -221,7 +221,7 @@ class TradingFuturesWorkflow(Workflow):
         # Create agent and render prompt
         agent = Agent(
             prompt_name="trading_futures",
-            model=LLMModel.BEDROCK_CLAUDE_4_5_HAIKU,
+            model=LLMModel.BEDROCK_CLAUDE_4_5_SONNET,
         )
 
         # Prepare context for prompt rendering

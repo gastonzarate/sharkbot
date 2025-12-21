@@ -1,0 +1,64 @@
+# Crypto Assets
+Bitcoin
+BTC
+比特币
+Ethereum
+ETH
+以太坊
+Solana
+SOL
+BNB
+币安
+XRP
+DOGE
+狗狗币
+
+# High Impact Events
+SEC
+ETF
+regulation
+监管
+hack
+黑客
+exploit
+攻击
+liquidation
+清算
+
+# Macro
+Federal Reserve
+Fed
+美联储
+inflation
+通胀
+CPI
+interest rate
+利率
+
+# Derivatives
+funding rate
+资金费率
+open interest
+持仓量
+options expiry
+期权
+liquidation
+清算
+
+# Risk Events
+bankruptcy
+破产
+depeg
+脱锚
+halt
+停止
+contagion
+传染
+
+# General Crypto Terms
+crypto
+cryptocurrency
+加密货币
+数字货币
+blockchain
+区块链
