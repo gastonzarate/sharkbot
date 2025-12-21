@@ -6,6 +6,7 @@ from asgiref.sync import sync_to_async
 from llama_index.core.agent.workflow import FunctionAgent
 from llama_index.core.agent.workflow.workflow_events import AgentStream
 from llama_index.core.workflow import Context, Event, StartEvent, StopEvent, Workflow, step
+from llama_index.tools.mcp import BasicMCPClient, McpToolSpec
 from tradings.models import TradingWorkflowExecution
 
 from services.binance_client import BinanceClient
@@ -240,8 +241,16 @@ class TradingFuturesWorkflow(Workflow):
         prompt_system = await agent.render_prompt(context=prompt_context)
 
         # Create tools
+        mcp_client = BasicMCPClient(
+            os.getenv("MCP_TRENDRADAR_URL")
+        )
+        mcp_tool_spec = McpToolSpec(
+            mcp_client=mcp_client,
+        )
+        tools = await mcp_tool_spec.to_tool_list_async()
+
         binance_tools = BinanceTools(self.binance_client)
-        tools = binance_tools.list_tools()
+        tools += binance_tools.list_tools()
 
         print(f"✓ Agent initialized with {len(tools)} trading tools")
         if previous_execution_strategy:
