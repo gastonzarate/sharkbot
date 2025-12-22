@@ -1,291 +1,1326 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shark Bot Trading Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+
     <style>
-        [v-cloak] { display: none; }
-        .markdown-body h1 { font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; }
-        .markdown-body h2 { font-size: 1.3em; font-weight: bold; margin-bottom: 0.5em; margin-top: 1em; }
-        .markdown-body h3 { font-size: 1.1em; font-weight: bold; margin-bottom: 0.5em; margin-top: 0.8em; }
-        .markdown-body p { margin-bottom: 1em; }
-        .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
-        .markdown-body ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 1em; }
-        .markdown-body strong { font-weight: 600; color: #f3f4f6; }
-        .markdown-body pre { background: #1f2937; padding: 1em; border-radius: 0.5em; overflow-x: auto; margin-bottom: 1em; }
-        .markdown-body code { background: #374151; padding: 0.2em 0.4em; border-radius: 0.25em; font-size: 0.9em; }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #1f2937; }
-        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-        .metric-card { transition: all 0.2s; }
-        .metric-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        /* RESET OBLIGATORIO & VARIABLES */
+        :root {
+            --c-deep-dark: #051F20;
+            --c-dark: #0B2B26;
+            --c-medium: #163832;
+            --c-accent: #235347;
+            --c-sage: #8EB69B;
+            --c-mint: #DAF1DE;
+            --c-error: #D46B6B;
+            --font-main: 'Inter', sans-serif;
+
+            --radius-xl: 32px;
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: var(--font-main);
+        }
+
+        *:focus {
+            outline: none;
+        }
+
+        body {
+            background-color: var(--c-deep-dark);
+            color: var(--c-mint);
+            min-height: 100vh;
+        }
+
+        [v-cloak] {
+            display: none;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--c-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--c-accent);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--c-sage);
+        }
+
+        /* --- LAYOUT --- */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 260px;
+            background-color: var(--c-dark);
+            padding: 40px 24px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--c-accent);
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 60px;
+            color: var(--c-mint);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            color: var(--c-sage);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background-color: var(--c-medium);
+            color: var(--c-mint);
+        }
+
+        .nav-item i {
+            font-size: 20px;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+        }
+
+        .user-mini {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background-color: var(--c-medium);
+            border-radius: var(--radius-lg);
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background-color: var(--c-sage);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--c-deep-dark);
+            font-weight: bold;
+        }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 32px;
+            overflow-y: auto;
+        }
+
+        /* Mobile Menu Button */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 101;
+            background-color: var(--c-medium);
+            border: 1px solid var(--c-accent);
+            color: var(--c-mint);
+            padding: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .welcome-text h1 {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--c-mint);
+        }
+
+        .welcome-text p {
+            color: var(--c-sage);
+            font-size: 14px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: 50px;
+            border: none;
+            font-family: var(--font-main);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background-color: var(--c-sage);
+            color: var(--c-deep-dark);
+        }
+
+        .btn-primary:hover {
+            background-color: #A3C6AF;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: var(--c-accent);
+            color: var(--c-mint);
+            border: 1px solid transparent;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--c-medium);
+            border-color: var(--c-sage);
+            transform: translateY(-2px);
+        }
+
+        /* --- INPUTS --- */
+        .input-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--c-sage);
+            font-size: 18px;
+            pointer-events: none;
+        }
+
+        .form-input {
+            width: 100%;
+            background-color: var(--c-medium);
+            color: var(--c-mint);
+            border: 1px solid var(--c-accent);
+            padding: 14px 20px 14px 48px;
+            border-radius: 50px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-input::placeholder {
+            color: var(--c-sage);
+            opacity: 0.7;
+        }
+
+        .form-input:focus {
+            border-color: var(--c-sage);
+        }
+
+        /* --- BADGES --- */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1;
+        }
+
+        .badge-up {
+            background-color: rgba(218, 241, 222, 0.1);
+            color: var(--c-mint);
+            border: 1px solid var(--c-accent);
+        }
+
+        .badge-down {
+            background-color: rgba(212, 107, 107, 0.1);
+            color: var(--c-error);
+            border: 1px solid rgba(212, 107, 107, 0.3);
+        }
+
+        /* --- CARDS --- */
+        .card {
+            background-color: var(--c-medium);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            border: 1px solid var(--c-accent);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--c-mint);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title-bar {
+            width: 4px;
+            height: 20px;
+            border-radius: 2px;
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--c-sage);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .btn-icon:hover {
+            background-color: var(--c-accent);
+            color: var(--c-mint);
+        }
+
+        /* --- KPI CARDS GRID --- */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, var(--c-medium) 0%, var(--c-dark) 100%);
+            padding: 24px;
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--c-accent);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .kpi-label {
+            color: var(--c-sage);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .kpi-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kpi-icon.green {
+            background-color: rgba(142, 182, 155, 0.15);
+            color: var(--c-sage);
+        }
+
+        .kpi-icon.blue {
+            background-color: rgba(99, 179, 237, 0.15);
+            color: #63b3ed;
+        }
+
+        .kpi-icon.purple {
+            background-color: rgba(183, 148, 244, 0.15);
+            color: #b794f4;
+        }
+
+        .kpi-icon.yellow {
+            background-color: rgba(236, 201, 75, 0.15);
+            color: #ecc94b;
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--c-mint);
+            margin-bottom: 4px;
+        }
+
+        .kpi-subtitle {
+            color: var(--c-sage);
+            font-size: 12px;
+        }
+
+        .text-positive {
+            color: var(--c-mint);
+        }
+
+        .text-negative {
+            color: var(--c-error);
+        }
+
+        /* Balance Hero Card */
+        .balance-hero {
+            background: linear-gradient(135deg, var(--c-medium) 0%, var(--c-dark) 100%);
+            padding: 32px;
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--c-accent);
+            margin-bottom: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .balance-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 60%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(142, 182, 155, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .balance-label {
+            color: var(--c-sage);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .balance-amount {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--c-mint);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* Time Filters */
+        .time-filters-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background-color: var(--c-dark);
+            padding: 16px 20px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--c-accent);
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+
+        .filter-label {
+            color: var(--c-sage);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .time-filters {
+            display: flex;
+            gap: 8px;
+            background-color: var(--c-medium);
+            padding: 4px;
+            border-radius: 20px;
+        }
+
+        .filter-btn {
+            padding: 8px 20px;
+            border-radius: 16px;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--c-sage);
+            background: transparent;
+            border: none;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover {
+            color: var(--c-mint);
+        }
+
+        .filter-btn.active {
+            background-color: var(--c-sage);
+            color: var(--c-deep-dark);
+            font-weight: 600;
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .chart-container {
+            background-color: var(--c-medium);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            border: 1px solid var(--c-accent);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--c-mint);
+        }
+
+        .chart-subtitle {
+            font-size: 12px;
+            color: var(--c-sage);
+        }
+
+        .chart-viz {
+            height: 280px;
+            position: relative;
+        }
+
+        /* Sections Grid */
+        .sections-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .section-full {
+            grid-column: 1 / -1;
+        }
+
+        /* Market Data */
+        .market-item {
+            background-color: var(--c-dark);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            border: 1px solid var(--c-accent);
+            margin-bottom: 12px;
+        }
+
+        .market-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .market-symbol {
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--c-mint);
+        }
+
+        .market-price {
+            color: var(--c-sage);
+            font-family: monospace;
+            font-size: 16px;
+        }
+
+        .market-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .market-stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .market-stat-label {
+            color: var(--c-sage);
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .market-stat-value {
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* Prompt Section */
+        .prompt-content {
+            background-color: var(--c-dark);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            border: 1px solid var(--c-accent);
+            font-size: 12px;
+            color: var(--c-sage);
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+
+        /* Agent Response */
+        .agent-content {
+            background-color: var(--c-dark);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            border: 1px solid var(--c-accent);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .markdown-body {
+            color: var(--c-sage);
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .markdown-body h1,
+        .markdown-body h2,
+        .markdown-body h3 {
+            color: var(--c-mint);
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+        }
+
+        .markdown-body h1 {
+            font-size: 1.4em;
+        }
+
+        .markdown-body h2 {
+            font-size: 1.2em;
+        }
+
+        .markdown-body h3 {
+            font-size: 1.1em;
+        }
+
+        .markdown-body p {
+            margin-bottom: 1em;
+        }
+
+        .markdown-body ul,
+        .markdown-body ol {
+            padding-left: 1.5em;
+            margin-bottom: 1em;
+        }
+
+        .markdown-body strong {
+            color: var(--c-mint);
+            font-weight: 600;
+        }
+
+        .markdown-body code {
+            background: var(--c-accent);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .markdown-body pre {
+            background: var(--c-deep-dark);
+            padding: 1em;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 1em;
+        }
+
+        /* Positions Grid */
+        .positions-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .position-card {
+            background-color: var(--c-dark);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            border: 1px solid var(--c-accent);
+        }
+
+        .position-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .position-symbol {
+            font-weight: 700;
+            color: var(--c-mint);
+        }
+
+        .position-side {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .position-side.long {
+            background-color: rgba(142, 182, 155, 0.2);
+            color: var(--c-sage);
+        }
+
+        .position-side.short {
+            background-color: rgba(212, 107, 107, 0.2);
+            color: var(--c-error);
+        }
+
+        .position-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .position-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+
+        .position-label {
+            color: var(--c-sage);
+        }
+
+        .position-value {
+            color: var(--c-mint);
+            font-family: monospace;
+        }
+
+        /* Operations Log */
+        .operations-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .operation-item {
+            background-color: var(--c-dark);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            border: 1px solid var(--c-accent);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.2s ease;
+        }
+
+        .operation-item:hover {
+            background-color: var(--c-accent);
+        }
+
+        .operation-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .operation-type {
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .operation-type.open-long {
+            background-color: rgba(142, 182, 155, 0.2);
+            color: var(--c-sage);
+        }
+
+        .operation-type.open-short {
+            background-color: rgba(212, 107, 107, 0.2);
+            color: var(--c-error);
+        }
+
+        .operation-type.close {
+            background-color: rgba(99, 179, 237, 0.2);
+            color: #63b3ed;
+        }
+
+        .operation-currency {
+            font-weight: 700;
+            color: var(--c-mint);
+        }
+
+        .operation-details {
+            color: var(--c-sage);
+            font-size: 13px;
+        }
+
+        .operation-status {
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .operation-status.success {
+            color: var(--c-sage);
+        }
+
+        .operation-status.error {
+            color: var(--c-error);
+        }
+
+        .operation-status.pending {
+            color: #ecc94b;
+        }
+
+        .operation-time {
+            color: var(--c-sage);
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--c-sage);
+        }
+
+        .scrollable-content {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 1200px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sections-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .positions-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .sidebar-overlay.open {
+                display: block;
+            }
+
+            .mobile-menu-btn {
+                display: flex;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 80px 16px 32px 16px;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                width: 100%;
+            }
+
+            .input-wrapper {
+                max-width: 100%;
+            }
+
+            .balance-amount {
+                font-size: 32px;
+            }
+
+            .actions-row {
+                flex-direction: column;
+            }
+
+            .actions-row .btn {
+                width: 100%;
+            }
+
+            .time-filters-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .time-filters {
+                overflow-x: auto;
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .positions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .kpi-value {
+                font-size: 24px;
+            }
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans">
+
+<body>
     <script>
         // Django context variable passed to JavaScript
         window.DJANGO_API_BASE_URL = "{{ api_base_url }}";
     </script>
     {% verbatim %}
-    <div id="app" v-cloak class="min-h-screen flex flex-col">
-        <!-- Header -->
-        <header class="bg-gray-800 border-b border-gray-700 p-4 shadow-lg sticky top-0 z-50">
-            <div class="max-w-[1800px] mx-auto flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
+    <div id="app" v-cloak class="app-container">
+
+        <!-- Mobile Menu Button -->
+        <button class="mobile-menu-btn" @click="toggleSidebar">
+            <i class="ph ph-list" style="font-size: 24px;"></i>
+        </button>
+
+        <!-- Sidebar Overlay -->
+        <div class="sidebar-overlay" :class="{ open: sidebarOpen }" @click="toggleSidebar"></div>
+
+        <!-- SIDEBAR -->
+        <nav class="sidebar" :class="{ open: sidebarOpen }">
+            <div class="logo">
+                <i class="ph ph-shark" style="color: var(--c-sage); font-size: 28px;"></i>
+                SharkBot
+            </div>
+
+            <ul class="nav-links">
+                <li><a class="nav-item active"><i class="ph ph-squares-four"></i> Portfolio</a></li>
+                <li><a class="nav-item"><i class="ph ph-chart-line-up"></i> Mercados</a></li>
+                <li><a class="nav-item"><i class="ph ph-arrows-left-right"></i> Trade</a></li>
+                <li><a class="nav-item"><i class="ph ph-brain"></i> Agente IA</a></li>
+                <li><a class="nav-item"><i class="ph ph-gear"></i> Ajustes</a></li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-mini">
+                    <div class="avatar">SB</div>
+                    <div style="font-size: 14px;">
+                        <div style="color: var(--c-mint);">Shark Bot</div>
+                        <div style="color: var(--c-sage); font-size: 12px;">Trading Activo</div>
                     </div>
-                    <div>
-                        <h1 class="text-xl font-bold tracking-tight text-white">Shark Bot <span class="text-emerald-400">Trading Dashboard</span></h1>
-                        <p class="text-xs text-gray-400">Real-time AI Trading Analytics</p>
-                    </div>
-                </div>
-                
-                <div class="flex items-center gap-4">
-                    <button @click="fetchData" :disabled="loading" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg">
-                        <svg v-if="loading" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span v-else>Actualizar</span>
-                    </button>
                 </div>
             </div>
-        </header>
+        </nav>
 
-        <!-- Main Content -->
-        <main class="flex-1 bg-gray-900 p-6">
-            <div class="max-w-[1800px] mx-auto space-y-6">
-                
-                <!-- KPI Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="metric-card bg-gradient-to-br from-gray-800 to-gray-800/50 rounded-xl p-5 border border-gray-700 shadow-xl">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-gray-400 text-sm font-medium">Balance Total</span>
-                            <div class="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center">
-                                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="text-3xl font-bold text-white mb-1">${{ latestExecution ? formatMoney(latestExecution.summary?.total_balance) : '0.00' }}</div>
-                        <div class="text-xs text-gray-500">Disponible: ${{ latestExecution ? formatMoney(latestExecution.summary?.available_balance) : '0.00' }}</div>
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+
+            <!-- HEADER -->
+            <header class="header">
+                <div class="welcome-text">
+                    <h1>Portfolio</h1>
+                    <p>{{ currentDate }}</p>
+                </div>
+                <div class="header-actions">
+                    <div class="input-wrapper">
+                        <i class="ph ph-magnifying-glass input-icon"></i>
+                        <input type="text" class="form-input" placeholder="Buscar activos...">
                     </div>
+                    <button class="btn btn-primary" @click="fetchData" :disabled="loading">
+                        <i v-if="loading" class="ph ph-circle-notch spinner"></i>
+                        <template v-else>
+                            <i class="ph ph-arrows-clockwise"></i>
+                            Actualizar
+                        </template>
+                    </button>
+                </div>
+            </header>
 
-                    <div class="metric-card bg-gradient-to-br from-gray-800 to-gray-800/50 rounded-xl p-5 border border-gray-700 shadow-xl">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-gray-400 text-sm font-medium">PnL del Día</span>
-                            <div class="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                                <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div :class="getPnlColorClass(latestExecution?.summary?.daily_pnl)" class="text-3xl font-bold mb-1">
-                            ${{ latestExecution ? formatMoney(latestExecution.summary?.daily_pnl) : '0.00' }}
-                        </div>
-                        <div class="text-xs text-gray-500">{{ latestExecution ? latestExecution.summary?.trade_count : 0 }} operaciones</div>
-                    </div>
+            <!-- BALANCE HERO CARD -->
+            <div class="balance-hero">
+                <div class="balance-label">Balance Total</div>
+                <div class="balance-amount">
+                    ${{ latestExecution ? formatMoney(latestExecution.summary?.total_balance) : '0.00' }}
+                    <span class="badge" :class="getDailyPnl >= 0 ? 'badge-up' : 'badge-down'">
+                        <i :class="getDailyPnl >= 0 ? 'ph ph-trend-up' : 'ph ph-trend-down'"></i>
+                        {{ getDailyPnlPercent }}%
+                    </span>
+                </div>
+            </div>
 
-                    <div class="metric-card bg-gradient-to-br from-gray-800 to-gray-800/50 rounded-xl p-5 border border-gray-700 shadow-xl">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-gray-400 text-sm font-medium">Win Rate</span>
-                            <div class="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="text-3xl font-bold text-white mb-1">{{ latestExecution ? latestExecution.summary?.win_rate.toFixed(1) : '0.0' }}%</div>
-                        <div class="text-xs text-gray-500" v-if="latestExecutionDetails?.daily_pnl">
-                            {{ latestExecutionDetails.daily_pnl.winning_trades }}W / {{ latestExecutionDetails.daily_pnl.losing_trades }}L
+            <!-- KPI CARDS -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Disponible</span>
+                        <div class="kpi-icon green">
+                            <i class="ph ph-wallet"></i>
                         </div>
                     </div>
+                    <div class="kpi-value">
+                        ${{ latestExecution ? formatMoney(latestExecution.summary?.available_balance) : '0.00' }}
+                    </div>
+                    <div class="kpi-subtitle">Balance disponible para trading</div>
+                </div>
 
-                    <div class="metric-card bg-gradient-to-br from-gray-800 to-gray-800/50 rounded-xl p-5 border border-gray-700 shadow-xl">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-gray-400 text-sm font-medium">Posiciones Abiertas</span>
-                            <div class="w-8 h-8 bg-yellow-500/10 rounded-lg flex items-center justify-center">
-                                <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                </svg>
-                            </div>
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-label">PnL del Día</span>
+                        <div class="kpi-icon blue">
+                            <i class="ph ph-chart-bar"></i>
                         </div>
-                        <div class="text-3xl font-bold text-white mb-1">{{ latestExecution ? latestExecution.summary?.open_positions_count : 0 }}</div>
-                        <div class="text-xs text-gray-500">Activas ahora</div>
+                    </div>
+                    <div class="kpi-value" :class="getDailyPnl >= 0 ? 'text-positive' : 'text-negative'">
+                        ${{ latestExecution ? formatMoney(latestExecution.summary?.daily_pnl) : '0.00' }}
+                    </div>
+                    <div class="kpi-subtitle">
+                        {{ latestExecution ? latestExecution.summary?.trade_count : 0 }} operaciones hoy
                     </div>
                 </div>
 
-                <!-- Time Filters -->
-                <div class="flex items-center gap-3 bg-gray-800/50 rounded-xl p-4 border border-gray-700">
-                    <span class="text-sm text-gray-400 font-medium">Período:</span>
-                    <div class="flex gap-2">
-                        <button @click="setFilter('24h')" :class="{'bg-emerald-600 text-white': activeFilter === '24h', 'bg-gray-700 text-gray-300 hover:bg-gray-600': activeFilter !== '24h'}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all shadow">24 Horas</button>
-                        <button @click="setFilter('7d')" :class="{'bg-emerald-600 text-white': activeFilter === '7d', 'bg-gray-700 text-gray-300 hover:bg-gray-600': activeFilter !== '7d'}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all shadow">7 Días</button>
-                        <button @click="setFilter('30d')" :class="{'bg-emerald-600 text-white': activeFilter === '30d', 'bg-gray-700 text-gray-300 hover:bg-gray-600': activeFilter !== '30d'}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all shadow">30 Días</button>
-                        <button @click="setFilter('all')" :class="{'bg-emerald-600 text-white': activeFilter === 'all', 'bg-gray-700 text-gray-300 hover:bg-gray-600': activeFilter !== 'all'}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all shadow">Todo</button>
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Win Rate</span>
+                        <div class="kpi-icon purple">
+                            <i class="ph ph-target"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-value">
+                        {{ latestExecution ? latestExecution.summary?.win_rate.toFixed(1) : '0.0' }}%
+                    </div>
+                    <div class="kpi-subtitle" v-if="latestExecutionDetails?.daily_pnl">
+                        {{ latestExecutionDetails.daily_pnl.winning_trades }}W /
+                        {{ latestExecutionDetails.daily_pnl.losing_trades }}L
                     </div>
                 </div>
 
-                <!-- Charts Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Balance Chart -->
-                    <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl">
-                        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                            <span class="w-1 h-6 bg-emerald-500 rounded"></span>
-                            Evolución del Balance
-                        </h3>
-                        <div class="h-80">
-                            <canvas id="balanceChart"></canvas>
+                <div class="kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Posiciones Abiertas</span>
+                        <div class="kpi-icon yellow">
+                            <i class="ph ph-lightning"></i>
                         </div>
                     </div>
+                    <div class="kpi-value">
+                        {{ latestExecution ? latestExecution.summary?.open_positions_count : 0 }}
+                    </div>
+                    <div class="kpi-subtitle">Activas ahora</div>
+                </div>
+            </div>
 
-                    <!-- Win Rate Chart -->
-                    <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl">
-                        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                            <span class="w-1 h-6 bg-purple-500 rounded"></span>
-                            Rendimiento Diario
-                        </h3>
-                        <div class="h-80">
-                            <canvas id="performanceChart"></canvas>
+            <!-- TIME FILTERS -->
+            <div class="time-filters-container">
+                <span class="filter-label">Período:</span>
+                <div class="time-filters">
+                    <button class="filter-btn" :class="{ active: activeFilter === '24h' }"
+                        @click="setFilter('24h')">24H</button>
+                    <button class="filter-btn" :class="{ active: activeFilter === '7d' }"
+                        @click="setFilter('7d')">7D</button>
+                    <button class="filter-btn" :class="{ active: activeFilter === '30d' }"
+                        @click="setFilter('30d')">1M</button>
+                    <button class="filter-btn" :class="{ active: activeFilter === 'all' }"
+                        @click="setFilter('all')">Todo</button>
+                </div>
+            </div>
+
+            <!-- CHARTS GRID -->
+            <div class="charts-grid">
+                <!-- Balance Chart -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">Evolución del Balance</div>
+                            <div class="chart-subtitle">Balance total en USDT</div>
                         </div>
                     </div>
-
-                    <!-- PnL Chart -->
-                    <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl">
-                        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                            <span class="w-1 h-6 bg-blue-500 rounded"></span>
-                            PnL Acumulado
-                        </h3>
-                        <div class="h-80">
-                            <canvas id="pnlChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Trade Count Chart -->
-                    <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl">
-                        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                            <span class="w-1 h-6 bg-yellow-500 rounded"></span>
-                            Actividad de Trading
-                        </h3>
-                        <div class="h-80">
-                            <canvas id="activityChart"></canvas>
-                        </div>
+                    <div class="chart-viz">
+                        <canvas id="balanceChart"></canvas>
                     </div>
                 </div>
 
-                <!-- Market Data & Prompts & Agent Analysis -->
-                <div class="grid grid-cols-1 gap-6">
-                    <!-- Market Data & System Prompt Row -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <!-- Market Data -->
-                        <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl lg:col-span-1">
-                            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                <span class="w-1 h-6 bg-cyan-500 rounded"></span>
-                                Datos de Mercado
-                            </h3>
-                            <div v-if="latestExecutionDetails?.market_data" class="space-y-4 max-h-96 overflow-y-auto">
-                                <div v-for="(data, currency) in latestExecutionDetails.market_data" :key="currency" class="bg-gray-700/30 rounded-lg p-4 border border-gray-600">
-                                    <div class="flex items-center justify-between mb-3">
-                                        <span class="font-bold text-lg text-white">{{ currency }}/USDT</span>
-                                        <span class="text-emerald-400 font-mono text-lg">${{ formatMoney(data.price) }}</span>
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-2 text-xs">
-                                        <div class="flex flex-col">
-                                            <span class="text-gray-500">RSI(14)</span>
-                                            <span :class="getRsiColor(data.rsi_14)" class="font-mono font-semibold">{{ data.rsi_14?.toFixed(2) }}</span>
-                                        </div>
-                                        <div class="flex flex-col">
-                                            <span class="text-gray-500">MACD</span>
-                                            <span :class="data.macd > 0 ? 'text-emerald-400' : 'text-red-400'" class="font-mono font-semibold">{{ data.macd?.toFixed(2) }}</span>
-                                        </div>
-                                        <div class="flex flex-col">
-                                            <span class="text-gray-500">EMA(9)</span>
-                                            <span class="text-gray-300 font-mono">{{ data.ema_9?.toFixed(2) }}</span>
-                                        </div>
-                                        <div class="flex flex-col">
-                                            <span class="text-gray-500">Funding</span>
-                                            <span :class="data.funding_rate < 0 ? 'text-red-400' : 'text-emerald-400'" class="font-mono font-semibold">{{ (data.funding_rate * 100)?.toFixed(4) }}%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div v-else class="text-center py-8 text-gray-500">
-                                <p>No hay datos de mercado disponibles</p>
-                            </div>
-                        </div>
-
-                        <!-- System Prompt -->
-                        <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl lg:col-span-2">
-                            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                <span class="w-1 h-6 bg-violet-500 rounded"></span>
-                                System Prompt (Contexto del Agente)
-                            </h3>
-                            <div v-if="latestExecutionDetails?.system_prompt" class="text-xs text-gray-300 leading-relaxed max-h-96 overflow-y-auto bg-gray-900/50 rounded-lg p-4 border border-gray-700 font-mono whitespace-pre-wrap">{{ latestExecutionDetails.system_prompt }}</div>
-                            <div v-else class="text-center py-8 text-gray-500">
-                                <div class="animate-pulse">
-                                    <p>No hay prompt disponible</p>
-                                </div>
-                            </div>
+                <!-- Win Rate Chart -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">Rendimiento Diario</div>
+                            <div class="chart-subtitle">Win Rate por sesión</div>
                         </div>
                     </div>
-
-                    <!-- Agent Analysis Full Width -->
-                    <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl">
-                        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                            <span class="w-1 h-6 bg-orange-500 rounded"></span>
-                            Análisis del Agente IA
-                        </h3>
-                        <div v-if="latestExecutionDetails?.agent_response" class="markdown-body text-sm text-gray-300 leading-relaxed max-h-96 overflow-y-auto bg-gray-900/50 rounded-lg p-4 border border-gray-700" v-html="renderMarkdown(latestExecutionDetails.agent_response)"></div>
-                        <div v-else class="text-center py-8 text-gray-500">
-                            <div class="animate-pulse">
-                                <p>Cargando análisis...</p>
-                            </div>
-                        </div>
+                    <div class="chart-viz">
+                        <canvas id="performanceChart"></canvas>
                     </div>
                 </div>
 
-                <!-- Open Positions -->
-                <div v-if="latestExecutionDetails?.open_positions?.length > 0" class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl">
-                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <span class="w-1 h-6 bg-red-500 rounded"></span>
-                        Posiciones Abiertas
+                <!-- PnL Chart -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">PnL Acumulado</div>
+                            <div class="chart-subtitle">Ganancias y pérdidas diarias</div>
+                        </div>
+                    </div>
+                    <div class="chart-viz">
+                        <canvas id="pnlChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Activity Chart -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">Actividad de Trading</div>
+                            <div class="chart-subtitle">Número de operaciones</div>
+                        </div>
+                    </div>
+                    <div class="chart-viz">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <!-- AGENT ANALYSIS -->
+            <div class="card section-full" style="margin-bottom: 32px;">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <span class="card-title-bar" style="background-color: #ed8936;"></span>
+                        Análisis del Agente IA
                     </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div v-for="position in latestExecutionDetails.open_positions" :key="position.symbol" class="bg-gray-700/30 rounded-lg p-4 border border-gray-600">
-                            <div class="flex items-center justify-between mb-3">
-                                <span class="font-bold text-white">{{ position.symbol }}</span>
-                                <span :class="position.side === 'LONG' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'" class="px-2 py-1 rounded text-xs font-bold">
+                    <button class="btn-icon"><i class="ph ph-brain"></i></button>
+                </div>
+                <div v-if="latestExecutionDetails?.agent_response" class="agent-content">
+                    <div class="markdown-body" v-html="renderMarkdown(latestExecutionDetails.agent_response)"></div>
+                </div>
+                <div v-else class="empty-state">
+                    <i class="ph ph-robot" style="font-size: 40px; opacity: 0.3;"></i>
+                    <p>Cargando análisis...</p>
+                </div>
+            </div>
+
+            <!-- MARKET DATA & PROMPT SECTION -->
+            <div class="sections-grid">
+                <!-- Market Data -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-title-bar" style="background-color: #63b3ed;"></span>
+                            Datos de Mercado
+                        </h3>
+                        <button class="btn-icon"><i class="ph ph-dots-three"></i></button>
+                    </div>
+                    <div class="scrollable-content" v-if="latestExecutionDetails?.market_data">
+                        <div class="market-item" v-for="(data, currency) in latestExecutionDetails.market_data"
+                            :key="currency">
+                            <div class="market-header">
+                                <span class="market-symbol">{{ currency }}/USDT</span>
+                                <span class="market-price">${{ formatMoney(data.price) }}</span>
+                            </div>
+                            <div class="market-stats">
+                                <div class="market-stat">
+                                    <span class="market-stat-label">RSI(14)</span>
+                                    <span class="market-stat-value" :style="{ color: getRsiColor(data.rsi_14) }">
+                                        {{ data.rsi_14?.toFixed(2) }}
+                                    </span>
+                                </div>
+                                <div class="market-stat">
+                                    <span class="market-stat-label">MACD</span>
+                                    <span class="market-stat-value"
+                                        :style="{ color: data.macd > 0 ? 'var(--c-sage)' : 'var(--c-error)' }">
+                                        {{ data.macd?.toFixed(2) }}
+                                    </span>
+                                </div>
+                                <div class="market-stat">
+                                    <span class="market-stat-label">EMA(9)</span>
+                                    <span class="market-stat-value" style="color: var(--c-sage);">
+                                        {{ data.ema_9?.toFixed(2) }}
+                                    </span>
+                                </div>
+                                <div class="market-stat">
+                                    <span class="market-stat-label">Funding</span>
+                                    <span class="market-stat-value"
+                                        :style="{ color: data.funding_rate < 0 ? 'var(--c-error)' : 'var(--c-sage)' }">
+                                        {{ (data.funding_rate * 100)?.toFixed(4) }}%
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="empty-state">
+                        <i class="ph ph-chart-line" style="font-size: 40px; opacity: 0.3;"></i>
+                        <p>No hay datos de mercado disponibles</p>
+                    </div>
+                </div>
+
+
+
+
+
+                <!-- OPEN POSITIONS -->
+                <div v-if="latestExecutionDetails?.open_positions?.length > 0" class="card section-full"
+                    style="margin-bottom: 32px;">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-title-bar" style="background-color: var(--c-error);"></span>
+                            Posiciones Abiertas
+                        </h3>
+                    </div>
+                    <div class="positions-grid">
+                        <div class="position-card" v-for="position in latestExecutionDetails.open_positions"
+                            :key="position.symbol">
+                            <div class="position-header">
+                                <span class="position-symbol">{{ position.symbol }}</span>
+                                <span class="position-side" :class="position.side === 'LONG' ? 'long' : 'short'">
                                     {{ position.side }}
                                 </span>
                             </div>
-                            <div class="space-y-2 text-sm">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-400">Entrada:</span>
-                                    <span class="text-white font-mono">${{ position.entry_price }}</span>
+                            <div class="position-details">
+                                <div class="position-row">
+                                    <span class="position-label">Entrada:</span>
+                                    <span class="position-value">${{ position.entry_price }}</span>
                                 </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-400">Cantidad:</span>
-                                    <span class="text-white font-mono">{{ position.quantity }}</span>
+                                <div class="position-row">
+                                    <span class="position-label">Cantidad:</span>
+                                    <span class="position-value">{{ position.quantity }}</span>
                                 </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-400">Leverage:</span>
-                                    <span class="text-white font-mono">{{ position.leverage }}x</span>
+                                <div class="position-row">
+                                    <span class="position-label">Leverage:</span>
+                                    <span class="position-value">{{ position.leverage }}x</span>
                                 </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-400">PnL No Realizado:</span>
-                                    <span :class="position.unrealized_pnl >= 0 ? 'text-emerald-400' : 'text-red-400'" class="font-mono font-semibold">
+                                <div class="position-row">
+                                    <span class="position-label">PnL:</span>
+                                    <span class="position-value"
+                                        :class="position.unrealized_pnl >= 0 ? 'text-positive' : 'text-negative'">
                                         ${{ position.unrealized_pnl?.toFixed(2) }}
                                     </span>
                                 </div>
@@ -294,34 +1329,57 @@
                     </div>
                 </div>
 
-                <!-- Operations Log -->
-                <div class="bg-gray-800/50 rounded-xl border border-gray-700 p-6 shadow-xl">
-                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <span class="w-1 h-6 bg-indigo-500 rounded"></span>
-                        Registro de Operaciones
-                    </h3>
-                    <div class="space-y-2 max-h-96 overflow-y-auto">
-                        <div v-for="op in operations.slice(0, 20)" :key="op.id" class="bg-gray-700/30 rounded-lg p-3 border border-gray-600 hover:bg-gray-700/50 transition-colors flex items-center justify-between">
-                            <div class="flex items-center gap-3 flex-1">
-                                <span :class="{'bg-emerald-500/20 text-emerald-400': op.operation_type === 'OPEN_LONG', 'bg-red-500/20 text-red-400': op.operation_type === 'OPEN_SHORT', 'bg-blue-500/20 text-blue-400': op.operation_type === 'CLOSE_POSITION'}" class="px-2 py-1 rounded text-xs font-bold whitespace-nowrap">
+                <!-- OPERATIONS LOG -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-title-bar" style="background-color: #667eea;"></span>
+                            Registro de Operaciones
+                        </h3>
+                        <button class="btn-icon"><i class="ph ph-funnel"></i></button>
+                    </div>
+                    <div class="operations-list" v-if="operations.length > 0">
+                        <div class="operation-item" v-for="op in operations.slice(0, 20)" :key="op.id">
+                            <div class="operation-info">
+                                <span class="operation-type"
+                                    :class="{ 'open-long': op.operation_type === 'OPEN_LONG', 'open-short': op.operation_type === 'OPEN_SHORT', 'close': op.operation_type === 'CLOSE_POSITION' }">
                                     {{ op.operation_type.replace('_', ' ') }}
                                 </span>
-                                <span class="font-bold text-white">{{ op.currency }}</span>
-                                <span v-if="op.entry_price" class="text-gray-400 text-sm">@ ${{ op.entry_price }}</span>
-                                <span v-if="op.quantity" class="text-gray-400 text-sm">Qty: {{ op.quantity }}</span>
-                                <span :class="{'text-emerald-400': op.status === 'SUCCESS', 'text-red-400': op.status === 'ERROR', 'text-yellow-400': op.status === 'PENDING'}" class="text-xs font-semibold">
+                                <span class="operation-currency">{{ op.currency }}</span>
+                                <span class="operation-details" v-if="op.entry_price">@ ${{ op.entry_price }}</span>
+                                <span class="operation-details" v-if="op.quantity">Qty: {{ op.quantity }}</span>
+                                <span class="operation-status"
+                                    :class="{ success: op.status === 'SUCCESS', error: op.status === 'ERROR', pending: op.status === 'PENDING' }">
                                     {{ op.status }}
                                 </span>
                             </div>
-                            <span class="text-xs text-gray-500 whitespace-nowrap ml-4">{{ formatDateTime(op.created_at) }}</span>
+                            <span class="operation-time">{{ formatDateTime(op.created_at) }}</span>
                         </div>
-                        <div v-if="operations.length === 0" class="text-center py-8 text-gray-500">
-                            No hay operaciones registradas
-                        </div>
+                    </div>
+                    <div v-else class="empty-state">
+                        <i class="ph ph-clipboard-text" style="font-size: 40px; opacity: 0.3;"></i>
+                        <p>No hay operaciones registradas</p>
                     </div>
                 </div>
 
+                <!-- System Prompt -->
+                <div class="card section-full">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span class="card-title-bar" style="background-color: #b794f4;"></span>
+                            System Prompt
+                        </h3>
+                        <button class="btn-icon"><i class="ph ph-copy"></i></button>
+                    </div>
+                    <div v-if="latestExecutionDetails?.system_prompt" class="markdown-body"
+                        v-html="renderMarkdown(latestExecutionDetails.system_prompt)"></div>
+                    <div v-else class="empty-state">
+                        <i class="ph ph-file-text" style="font-size: 40px; opacity: 0.3;"></i>
+                        <p>No hay prompt disponible</p>
+                    </div>
+                </div>
             </div>
+
         </main>
     </div>
 
@@ -331,22 +1389,14 @@
         createApp({
             setup() {
                 const loading = ref(false);
+                const sidebarOpen = ref(false);
                 const executions = ref([]);
                 const operations = ref([]);
                 const latestExecution = ref(null);
                 const latestExecutionDetails = ref(null);
 
-                // Use Django-provided API URL or fallback to current origin.
-                // If the template placeholder wasn't rendered (e.g. served as a static file),
-                // avoid using the raw "{{ api_base_url }}" string as a base URL.
-                const resolveApiBaseUrl = () => {
-                    const raw = window.DJANGO_API_BASE_URL;
-                    if (!raw || typeof raw !== 'string') return window.location.origin;
-                    if (raw.includes("{{")) return window.location.origin;
-                    return raw;
-                };
-                const baseUrl = ref(resolveApiBaseUrl());
-                
+                const baseUrl = ref('/');
+
                 const activeFilter = ref('7d');
                 const filters = ref({
                     startDate: moment().subtract(7, 'days').startOf('day'),
@@ -355,19 +1405,46 @@
 
                 const chartInstances = ref({});
 
+                const currentDate = computed(() => {
+                    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                    return new Date().toLocaleDateString('es-ES', options);
+                });
+
+                const getDailyPnl = computed(() => {
+                    return latestExecution.value?.summary?.daily_pnl || 0;
+                });
+
+                const getDailyPnlPercent = computed(() => {
+                    const pnl = getDailyPnl.value;
+                    const balance = latestExecution.value?.summary?.total_balance || 1;
+                    return ((pnl / balance) * 100).toFixed(2);
+                });
+
+                const toggleSidebar = () => {
+                    sidebarOpen.value = !sidebarOpen.value;
+                };
+
                 const setFilter = (period) => {
                     activeFilter.value = period;
                     const end = moment().endOf('day');
                     let start;
-                    
-                    switch(period) {
+
+                    switch (period) {
                         case '24h': start = moment().subtract(24, 'hours'); break;
                         case '7d': start = moment().subtract(7, 'days').startOf('day'); break;
                         case '30d': start = moment().subtract(30, 'days').startOf('day'); break;
                         case 'all': start = moment('2020-01-01'); break;
+                        default: start = moment().subtract(7, 'days').startOf('day');
                     }
-                    
+
                     filters.value = { startDate: start, endDate: end };
+
+                    // Log filter change for debugging
+                    console.log('Filter changed to:', period, {
+                        start: start.format('YYYY-MM-DD HH:mm'),
+                        end: end.format('YYYY-MM-DD HH:mm')
+                    });
+
                     updateCharts();
                 };
 
@@ -375,17 +1452,20 @@
                     loading.value = true;
 
                     try {
-                        const api = axios.create({ baseURL: baseUrl.value });
-                        
-                        // Fetch more data to show history (default page size is 20)
+                        const api = axios.create({
+                            baseURL: baseUrl.value,
+                            headers: {
+                                "ngrok-skip-browser-warning": "true"
+                            }
+                        });
+
                         const execRes = await api.get('/executions/?page_size=100');
                         const rawExecutions = Array.isArray(execRes.data.results)
                             ? execRes.data.results
                             : Array.isArray(execRes.data)
-                              ? execRes.data
-                              : [];
+                                ? execRes.data
+                                : [];
 
-                        // Prefer the most recent successful execution so balance isn't zeroed out by failed runs.
                         const successfulExecutions = rawExecutions.filter(
                             (e) => e.status === 'SUCCESS' && e.summary
                         );
@@ -397,10 +1477,8 @@
                             latestExecutionDetails.value = detailRes.data;
                         }
 
-                        // Use only successful executions for charts to avoid zero dips from failed runs.
                         const chartExecutions = successfulExecutions.length ? successfulExecutions : rawExecutions;
                         executions.value = [...chartExecutions].sort((a, b) => {
-                            // Parse with explicit format matching Django's DATETIME_FORMAT
                             return moment(a.created_at, "YYYY-MM-DD HH:mm").diff(moment(b.created_at, "YYYY-MM-DD HH:mm"));
                         });
 
@@ -412,17 +1490,24 @@
 
                     } catch (error) {
                         console.error(`Error fetching data from ${baseUrl.value}:`, error);
-                        alert(`Failed to fetch data from ${baseUrl.value}. Check console for details.`);
                     } finally {
                         loading.value = false;
                     }
                 };
 
                 const updateCharts = () => {
+                    if (!executions.value || executions.value.length === 0) {
+                        console.log('No executions data available for charts');
+                        return;
+                    }
+
                     const dataPoints = executions.value.filter(e => {
                         const date = moment(e.created_at, "YYYY-MM-DD HH:mm");
-                        return date.isSameOrAfter(filters.value.startDate) && date.isSameOrBefore(filters.value.endDate);
+                        const isInRange = date.isSameOrAfter(filters.value.startDate) && date.isSameOrBefore(filters.value.endDate);
+                        return isInRange;
                     });
+
+                    console.log(`Filtered ${dataPoints.length} data points from ${executions.value.length} total executions`);
 
                     updateBalanceChart(dataPoints);
                     updatePerformanceChart(dataPoints);
@@ -430,11 +1515,22 @@
                     updateActivityChart(dataPoints);
                 };
 
+                const getChartColors = () => ({
+                    sage: '#8EB69B',
+                    mint: '#DAF1DE',
+                    medium: '#163832',
+                    accent: '#235347',
+                    dark: '#0B2B26',
+                    error: '#D46B6B'
+                });
+
                 const updateBalanceChart = (dataPoints) => {
                     const ctx = document.getElementById('balanceChart')?.getContext('2d');
                     if (!ctx) return;
 
                     if (chartInstances.value.balance) chartInstances.value.balance.destroy();
+
+                    const colors = getChartColors();
 
                     chartInstances.value.balance = new Chart(ctx, {
                         type: 'line',
@@ -443,12 +1539,24 @@
                             datasets: [{
                                 label: 'Balance Total',
                                 data: dataPoints.map(e => e.summary?.total_balance || 0),
-                                borderColor: '#10b981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                borderColor: colors.sage,
+                                backgroundColor: (context) => {
+                                    const chart = context.chart;
+                                    const { ctx, chartArea } = chart;
+                                    if (!chartArea) return colors.sage;
+                                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                                    gradient.addColorStop(0, 'rgba(142, 182, 155, 0)');
+                                    gradient.addColorStop(1, 'rgba(142, 182, 155, 0.3)');
+                                    return gradient;
+                                },
                                 tension: 0.4,
                                 fill: true,
-                                pointRadius: 2,
-                                pointHoverRadius: 5
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
+                                pointHoverBackgroundColor: colors.mint,
+                                pointHoverBorderColor: colors.sage,
+                                pointHoverBorderWidth: 2,
+                                borderWidth: 3
                             }]
                         },
                         options: getChartOptions('Balance (USDT)')
@@ -461,6 +1569,8 @@
 
                     if (chartInstances.value.performance) chartInstances.value.performance.destroy();
 
+                    const colors = getChartColors();
+
                     chartInstances.value.performance = new Chart(ctx, {
                         type: 'line',
                         data: {
@@ -468,12 +1578,24 @@
                             datasets: [{
                                 label: 'Win Rate',
                                 data: dataPoints.map(e => e.summary?.win_rate || 0),
-                                borderColor: '#a855f7',
-                                backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                                borderColor: '#b794f4',
+                                backgroundColor: (context) => {
+                                    const chart = context.chart;
+                                    const { ctx, chartArea } = chart;
+                                    if (!chartArea) return '#b794f4';
+                                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                                    gradient.addColorStop(0, 'rgba(183, 148, 244, 0)');
+                                    gradient.addColorStop(1, 'rgba(183, 148, 244, 0.3)');
+                                    return gradient;
+                                },
                                 tension: 0.4,
                                 fill: true,
-                                pointRadius: 2,
-                                pointHoverRadius: 5,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
+                                pointHoverBackgroundColor: '#e9d8fd',
+                                pointHoverBorderColor: '#b794f4',
+                                pointHoverBorderWidth: 2,
+                                borderWidth: 3,
                                 yAxisID: 'y'
                             }]
                         },
@@ -487,6 +1609,8 @@
 
                     if (chartInstances.value.pnl) chartInstances.value.pnl.destroy();
 
+                    const colors = getChartColors();
+
                     chartInstances.value.pnl = new Chart(ctx, {
                         type: 'bar',
                         data: {
@@ -494,9 +1618,11 @@
                             datasets: [{
                                 label: 'PnL Diario',
                                 data: dataPoints.map(e => e.summary?.daily_pnl || 0),
-                                backgroundColor: dataPoints.map(e => (e.summary?.daily_pnl || 0) >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
-                                borderColor: dataPoints.map(e => (e.summary?.daily_pnl || 0) >= 0 ? '#10b981' : '#ef4444'),
-                                borderWidth: 1
+                                backgroundColor: dataPoints.map(e => (e.summary?.daily_pnl || 0) >= 0 ? 'rgba(142, 182, 155, 0.8)' : 'rgba(212, 107, 107, 0.8)'),
+                                borderColor: dataPoints.map(e => (e.summary?.daily_pnl || 0) >= 0 ? colors.sage : colors.error),
+                                borderWidth: 1,
+                                borderRadius: 6,
+                                borderSkipped: false
                             }]
                         },
                         options: getChartOptions('PnL (USDT)')
@@ -516,9 +1642,11 @@
                             datasets: [{
                                 label: 'Número de Trades',
                                 data: dataPoints.map(e => e.summary?.trade_count || 0),
-                                backgroundColor: 'rgba(234, 179, 8, 0.8)',
-                                borderColor: '#eab308',
-                                borderWidth: 1
+                                backgroundColor: 'rgba(236, 201, 75, 0.8)',
+                                borderColor: '#ecc94b',
+                                borderWidth: 1,
+                                borderRadius: 6,
+                                borderSkipped: false
                             }]
                         },
                         options: getChartOptions('Trades', 0)
@@ -530,28 +1658,31 @@
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
-                        legend: { labels: { color: '#9ca3af', font: { size: 11 } } },
+                        legend: {
+                            display: false
+                        },
                         tooltip: {
-                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
-                            titleColor: '#f3f4f6',
-                            bodyColor: '#d1d5db',
-                            borderColor: '#374151',
+                            backgroundColor: '#0B2B26',
+                            titleColor: '#DAF1DE',
+                            bodyColor: '#8EB69B',
+                            borderColor: '#235347',
                             borderWidth: 1,
                             padding: 12,
-                            displayColors: true
+                            displayColors: false,
+                            cornerRadius: 12
                         }
                     },
                     scales: {
                         x: {
                             type: 'time',
                             time: { unit: 'hour', displayFormats: { hour: 'MMM D, HH:mm' } },
-                            grid: { color: '#374151', drawBorder: false },
-                            ticks: { color: '#9ca3af', font: { size: 10 } }
+                            grid: { color: 'rgba(35, 83, 71, 0.3)', drawBorder: false },
+                            ticks: { color: '#8EB69B', font: { size: 10 } }
                         },
                         y: {
-                            grid: { color: '#374151', drawBorder: false },
-                            ticks: { color: '#9ca3af', font: { size: 10 } },
-                            title: { display: true, text: yLabel, color: '#9ca3af' },
+                            grid: { color: 'rgba(35, 83, 71, 0.3)', drawBorder: false },
+                            ticks: { color: '#8EB69B', font: { size: 10 } },
+                            title: { display: false },
                             suggestedMin: suggestedMin,
                             suggestedMax: suggestedMax
                         }
@@ -560,12 +1691,13 @@
 
                 const formatMoney = (val) => val ? Number(val).toFixed(2) : '0.00';
                 const formatDateTime = (date) => moment(date).format('MMM D, HH:mm');
-                const getPnlColorClass = (val) => val > 0 ? 'text-emerald-400' : (val < 0 ? 'text-red-400' : 'text-gray-400');
+
                 const getRsiColor = (rsi) => {
-                    if (rsi >= 70) return 'text-red-400';
-                    if (rsi <= 30) return 'text-emerald-400';
-                    return 'text-gray-300';
+                    if (rsi >= 70) return 'var(--c-error)';
+                    if (rsi <= 30) return 'var(--c-sage)';
+                    return 'var(--c-sage)';
                 };
+
                 const renderMarkdown = (text) => text ? marked.parse(text) : '';
 
                 onMounted(() => {
@@ -575,16 +1707,20 @@
                 return {
                     baseUrl,
                     loading,
+                    sidebarOpen,
                     executions,
                     operations,
                     latestExecution,
                     latestExecutionDetails,
                     activeFilter,
+                    currentDate,
+                    getDailyPnl,
+                    getDailyPnlPercent,
                     fetchData,
                     setFilter,
+                    toggleSidebar,
                     formatMoney,
                     formatDateTime,
-                    getPnlColorClass,
                     getRsiColor,
                     renderMarkdown
                 };
@@ -593,4 +1729,5 @@
     </script>
     {% endverbatim %}
 </body>
+
 </html>

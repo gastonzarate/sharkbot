@@ -213,6 +213,7 @@ CORS_ALLOW_HEADERS = (
     "Refresh-Token",
     "User-Agent",
     "Api-Token",
+    "ngrok-skip-browser-warning",
 )
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
