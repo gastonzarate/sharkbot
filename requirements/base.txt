@@ -12,6 +12,7 @@ json-repair==0.54.2
 langfuse==3.10.1
 openinference-instrumentation-llama-index==4.3.9
 ipython==9.7.0
+numpy==2.2.1  # Numerical computing for python_tools
 pandas==2.2.3
 ta==0.11.0
 llama-index-utils-workflow==0.5.1

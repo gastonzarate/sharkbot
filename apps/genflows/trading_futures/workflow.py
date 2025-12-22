@@ -14,6 +14,7 @@ from services.binance_client import BinanceClient
 
 from apps.genflows.agent import Agent, LLMModel
 from apps.genflows.trading_futures.binance_tools import BinanceTools
+from apps.genflows.trading_futures.python_tools import PythonTools
 
 
 class CollectMarketDataEvent(Event):
@@ -223,7 +224,7 @@ class TradingFuturesWorkflow(Workflow):
         # Create agent and render prompt
         agent = Agent(
             prompt_name="trading_futures",
-            model=LLMModel.BEDROCK_CLAUDE_4_5_SONNET,
+            model=LLMModel.BEDROCK_CLAUDE_4_5_HAIKU,
         )
 
         # Prepare context for prompt rendering
@@ -252,6 +253,9 @@ class TradingFuturesWorkflow(Workflow):
 
         binance_tools = BinanceTools(self.binance_client)
         tools += binance_tools.list_tools()
+
+        python_tools = PythonTools()
+        tools += python_tools.list_tools()
 
         print(f"✓ Agent initialized with {len(tools)} trading tools")
         if previous_execution_strategy:
