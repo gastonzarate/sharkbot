@@ -1026,13 +1026,7 @@
                 SharkBot
             </div>
 
-            <ul class="nav-links">
-                <li><a class="nav-item active"><i class="ph ph-squares-four"></i> Portfolio</a></li>
-                <li><a class="nav-item"><i class="ph ph-chart-line-up"></i> Mercados</a></li>
-                <li><a class="nav-item"><i class="ph ph-arrows-left-right"></i> Trade</a></li>
-                <li><a class="nav-item"><i class="ph ph-brain"></i> Agente IA</a></li>
-                <li><a class="nav-item"><i class="ph ph-gear"></i> Ajustes</a></li>
-            </ul>
+
 
             <div class="sidebar-footer">
                 <div class="user-mini">
@@ -1055,10 +1049,6 @@
                     <p>{{ currentDate }}</p>
                 </div>
                 <div class="header-actions">
-                    <div class="input-wrapper">
-                        <i class="ph ph-magnifying-glass input-icon"></i>
-                        <input type="text" class="form-input" placeholder="Buscar activos...">
-                    </div>
                     <button class="btn btn-primary" @click="fetchData" :disabled="loading">
                         <i v-if="loading" class="ph ph-circle-notch spinner"></i>
                         <template v-else>
@@ -1405,6 +1395,10 @@
 
                 const chartInstances = ref({});
 
+                // Rate limiting: 5 minutos entre actualizaciones
+                const lastUpdateTime = ref(null);
+                const UPDATE_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutos
+
                 const currentDate = computed(() => {
                     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
                     return new Date().toLocaleDateString('es-ES', options);
@@ -1418,6 +1412,27 @@
                     const pnl = getDailyPnl.value;
                     const balance = latestExecution.value?.summary?.total_balance || 1;
                     return ((pnl / balance) * 100).toFixed(2);
+                });
+
+                const canUpdate = computed(() => {
+                    if (!lastUpdateTime.value) return true;
+                    const timeSinceLastUpdate = Date.now() - lastUpdateTime.value;
+                    return timeSinceLastUpdate >= UPDATE_COOLDOWN_MS;
+                });
+
+                const timeUntilNextUpdate = computed(() => {
+                    if (!lastUpdateTime.value || canUpdate.value) return 0;
+                    const timeSinceLastUpdate = Date.now() - lastUpdateTime.value;
+                    const timeRemaining = UPDATE_COOLDOWN_MS - timeSinceLastUpdate;
+                    return Math.ceil(timeRemaining / 1000); // en segundos
+                });
+
+                const updateButtonText = computed(() => {
+                    if (loading.value) return '';
+                    if (canUpdate.value) return 'Actualizar';
+                    const minutes = Math.floor(timeUntilNextUpdate.value / 60);
+                    const seconds = timeUntilNextUpdate.value % 60;
+                    return `Espera ${minutes}:${seconds.toString().padStart(2, '0')}`;
                 });
 
                 const toggleSidebar = () => {
@@ -1449,7 +1464,10 @@
                 };
 
                 const fetchData = async () => {
+                    if (!canUpdate.value) return;
+
                     loading.value = true;
+                    lastUpdateTime.value = Date.now();
 
                     try {
                         const api = axios.create({
@@ -1702,6 +1720,13 @@
 
                 onMounted(() => {
                     fetchData();
+                    // Actualizar el temporizador cada segundo
+                    setInterval(() => {
+                        if (!canUpdate.value) {
+                            // Forzar actualización de computeds
+                            timeUntilNextUpdate.value;
+                        }
+                    }, 1000);
                 });
 
                 return {
@@ -1722,7 +1747,9 @@
                     formatMoney,
                     formatDateTime,
                     getRsiColor,
-                    renderMarkdown
+                    renderMarkdown,
+                    canUpdate,
+                    updateButtonText
                 };
             }
         }).mount('#app');

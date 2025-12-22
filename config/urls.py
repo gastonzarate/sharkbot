@@ -13,11 +13,11 @@ urlpatterns = [
     path("", HomePageView.as_view(), name="home"),
     path("", include(("tradings.urls", "tradings"))),
     path("", include(("accounts.urls", "accounts"))),
-    path("api/auth/login/", TokenObtainPairView.as_view()),
-    path("api/auth/login/refresh/", TokenRefreshView.as_view()),
-    path("api/auth/logout/", TokenBlacklistView.as_view(), name="token_blacklist"),
+    # path("api/auth/login/", TokenObtainPairView.as_view()),
+    # path("api/auth/login/refresh/", TokenRefreshView.as_view()),
+    # path("api/auth/logout/", TokenBlacklistView.as_view(), name="token_blacklist"),
     # API Documentation
-    path("schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
-    path("redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+    # path("schema/", SpectacularAPIView.as_view(), name="schema"),
+    # path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    # path("redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
 ]
