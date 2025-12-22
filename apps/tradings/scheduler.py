@@ -30,7 +30,7 @@ async def execute_workflow():
     ):
         langfuse.update_current_trace(user_id="scheduler", session_id=f"scheduled-{trace_id}")
 
-        workflow = TradingFuturesWorkflow(timeout=180)
+        workflow = TradingFuturesWorkflow(timeout=480)
         logger.info("✅ Trading workflow initialized")
 
         handler = workflow.run(currencies=["BTC", "ETH", "BFUSD", "BNB", "USDC"])

@@ -38,7 +38,7 @@ class TradingsConfig(AppConfig):
         # Schedule the trading workflow to run every custom minutes
         from datetime import datetime, timezone
         
-        minutes = 3  # Increased from 1 to ensure workflow completes before next run
+        minutes = 5  # Increased from 1 to ensure workflow completes before next run
         scheduler.add_job(
             run_trading_workflow,
             "interval",
