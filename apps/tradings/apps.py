@@ -21,25 +21,26 @@ class TradingsConfig(AppConfig):
 
         from apscheduler.schedulers.background import BackgroundScheduler
 
-        if settings.DEBUG:
-            return
+        # if settings.DEBUG:
+        #     return
 
         from apps.tradings.scheduler import run_trading_workflow
 
         scheduler = BackgroundScheduler()
 
-        # Schedule the trading workflow to run every 15 minutes
+        # Schedule the trading workflow to run every custom minutes
+        minutes = 5
         scheduler.add_job(
             run_trading_workflow,
             "interval",
-            minutes=1,
+            minutes=minutes,
             id="trading_futures_workflow",
             name="Trading Futures Workflow",
             replace_existing=True,
         )
 
         scheduler.start()
-        logger.info("✅ APScheduler started - Trading workflow will run every 15 minutes")
+        logger.info(f"✅ APScheduler started - Trading workflow will run every {minutes} minutes")
 
         # Shutdown scheduler when Django exits
         import atexit

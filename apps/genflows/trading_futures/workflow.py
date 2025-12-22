@@ -1,4 +1,5 @@
 import re
+import os
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -245,7 +246,7 @@ class TradingFuturesWorkflow(Workflow):
             os.getenv("MCP_TRENDRADAR_URL")
         )
         mcp_tool_spec = McpToolSpec(
-            mcp_client=mcp_client,
+            client=mcp_client,
         )
         tools = await mcp_tool_spec.to_tool_list_async()
 

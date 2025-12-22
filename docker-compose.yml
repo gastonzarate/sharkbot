@@ -62,7 +62,7 @@ services:
       - ./trendradar/config:/app/config
       - ./trendradar/output:/app/output
     ports:
-      - "3022:3000"
+      - "3333:3333"
     restart: unless-stopped
 
 volumes:
