@@ -33,6 +33,118 @@ The bot uses a workflow-based architecture built with LlamaIndex:
 4. **AI Analysis & Execution**: Claude AI analyzes market conditions and executes trades
 5. **Result Storage**: Saves execution results, strategy, and performance metrics
 
+### System Architecture Diagram
+
+```mermaid
+graph TB
+    subgraph SCHEDULERS["⏰ SCHEDULERS"]
+        APScheduler["APScheduler<br/>(Ejecuta cada minuto)"]
+    end
+
+    subgraph WORKFLOW["🔄 TRADING FUTURES WORKFLOW"]
+        Start["Inicio"]
+        CheckBalance["1. Check Balance<br/>(Verifica fondos USDT)"]
+        CollectData["2. Collect Market Data<br/>(Concurrente para todas las monedas)"]
+        AggregatePositions["3. Aggregate Positions<br/>(Consolida datos + posiciones abiertas)"]
+        ExecuteAgent["4. Execute Trading Agent<br/>(Claude AI toma decisiones)"]
+        SaveResults["5. Save Results<br/>(Guarda en DB)"]
+    end
+
+    subgraph AGENT["🤖 AI AGENT - Claude 4.5 Sonnet"]
+        SystemPrompt["System Prompt<br/>(Estrategia + Risk Management)"]
+        AgentTools["Agent Tools"]
+        ReasoningEngine["Reasoning Engine<br/>(Claude via AWS Bedrock)"]
+    end
+
+    subgraph TOOLS["🛠️ HERRAMIENTAS DEL AGENTE"]
+        BinanceTools["Binance Tools"]
+        PythonTools["Python Tools"]
+        TrendRadarTools["TrendRadar Tools (MCP)"]
+
+        subgraph BinanceToolsList["Binance Trading Functions"]
+            OpenLong["open_long_position<br/>📈 Abre posición larga"]
+            OpenShort["open_short_position<br/>📉 Abre posición corta"]
+            ClosePosition["close_position<br/>🔒 Cierra posición"]
+        end
+
+        subgraph PythonToolsList["Python Code Execution"]
+            ExecutePython["execute_python_code<br/>🧮 Cálculos matemáticos"]
+        end
+
+        subgraph TrendRadarToolsList["News Aggregation"]
+            GetNews["get_news<br/>📰 Noticias de 35+ plataformas"]
+        end
+    end
+
+    subgraph BINANCE["🔗 BINANCE CLIENT"]
+        BinanceAPI["Binance Futures API"]
+        MarketData["Market Data<br/>(Precio, RSI, MACD, EMA, ATR)"]
+        OrderExecution["Order Execution"]
+        AccountInfo["Account Info"]
+    end
+
+    subgraph DATABASE["💾 DATABASE (PostgreSQL)"]
+        TradingExecutions["TradingWorkflowExecution"]
+        TradingOperations["TradingOperation"]
+    end
+
+    subgraph NEWS["📰 NEWS AGGREGATION"]
+        TrendRadar["TrendRadar<br/>(35+ plataformas chinas)"]
+        NewsDB["SQLite DB"]
+    end
+
+    subgraph MONITORING["📊 OBSERVABILITY"]
+        Langfuse["Langfuse<br/>(AI workflow tracing)"]
+        DjangoAdmin["Django Admin<br/>(Dashboard)"]
+    end
+
+    %% Flujo principal
+    APScheduler -->|"Trigger cada minuto"| Start
+    Start --> CheckBalance
+    CheckBalance -->|"Balance OK"| CollectData
+    CollectData -->|"BTC, ETH, SOL, BNB, XRP, DOGE"| AggregatePositions
+    AggregatePositions -->|"Datos agregados"| ExecuteAgent
+
+    ExecuteAgent --> SystemPrompt
+    SystemPrompt --> ReasoningEngine
+    ReasoningEngine <-->|"Usa herramientas"| AgentTools
+
+    AgentTools --> BinanceTools
+    AgentTools --> PythonTools
+    AgentTools --> TrendRadarTools
+
+    BinanceTools --> OpenLong
+    BinanceTools --> OpenShort
+    BinanceTools --> ClosePosition
+
+    PythonTools --> ExecutePython
+
+    TrendRadarTools --> GetNews
+    GetNews -->|"Lee noticias"| NewsDB
+
+    OpenLong -->|"Ejecuta orden"| BinanceAPI
+    OpenShort -->|"Ejecuta orden"| BinanceAPI
+    ClosePosition -->|"Ejecuta orden"| BinanceAPI
+
+    ExecuteAgent -->|"Decisión tomada"| SaveResults
+    SaveResults --> TradingExecutions
+
+    BinanceAPI --> MarketData
+    BinanceAPI --> OrderExecution
+    BinanceAPI --> AccountInfo
+
+    MarketData -->|"Datos técnicos"| CollectData
+    AccountInfo -->|"Balance + Posiciones"| CheckBalance
+    OrderExecution -->|"Registra operación"| TradingOperations
+
+    TrendRadar -->|"Noticias cripto"| NewsDB
+    NewsDB -.->|"Contexto adicional"| SystemPrompt
+
+    ExecuteAgent -.->|"Trace de workflow"| Langfuse
+    TradingExecutions -.->|"Visualiza"| DjangoAdmin
+    TradingOperations -.->|"Visualiza"| DjangoAdmin
+```
+
 ## 🚀 Getting Started
 
 ### Prerequisites
