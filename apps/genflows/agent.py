@@ -21,9 +21,9 @@ class AgentType(Enum):
 
 
 class LLMModel(Enum):
-    BEDROCK_CLAUDE_4_5_SONNET = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
-    BEDROCK_CLAUDE_4_5_HAIKU = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
-    BEDROCK_DEEPSEEK_R1 = "us.deepseek.r1-v1:0"
+    BEDROCK_CLAUDE_4_5_SONNET = "global.anthropic.claude-sonnet-4-5-20250929-v1:0"
+    BEDROCK_CLAUDE_4_5_HAIKU = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+    BEDROCK_DEEPSEEK_R1 = "global.deepseek.r1-v1:0"
     GPT_4_1_MINI = "gpt-4.1-mini"
 
 

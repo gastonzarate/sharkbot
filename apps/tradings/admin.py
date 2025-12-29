@@ -146,7 +146,7 @@ class TradingWorkflowExecutionAdmin(admin.ModelAdmin):
 
     def pnl_display(self, obj):
         """Display daily PnL with color."""
-        pnl = obj.daily_pnl.get("daily_realized_pnl", 0)
+        pnl = obj.daily_pnl.get("total_daily_pnl", 0)
         color = "green" if pnl >= 0 else "red"
         return format_html('<span style="color: {};">{}</span>', color, f"${pnl:.2f}")
 

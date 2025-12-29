@@ -612,12 +612,17 @@ class BinanceClient:
             print(f"Error cancelling orders: {e}")
             return {"error": str(e), "cancelled_count": 0, "orders": []}
 
-    def get_daily_pnl(self) -> dict:
+    def get_daily_pnl(self, include_unrealized: bool = True) -> dict:
         """
         Get today's realized PnL and trade statistics.
 
+        Args:
+            include_unrealized (bool): If True, includes unrealized PnL from open positions 
+                                      to match Binance's total daily PnL display (default: True)
+
         Returns:
-            dict: Daily performance metrics including realized PnL and trade count.
+            dict: Daily performance metrics including realized PnL, unrealized PnL, 
+                  total daily PnL, and trade count.
         """
         try:
             # Get income history (realized PnL)
@@ -631,7 +636,16 @@ class BinanceClient:
             )
 
             today_trades = [i for i in income if i["time"] >= today_start]
-            today_pnl = sum(float(i["income"]) for i in today_trades)
+            today_realized_pnl = sum(float(i["income"]) for i in today_trades)
+
+            # Get unrealized PnL from open positions if requested
+            unrealized_pnl = 0
+            if include_unrealized:
+                balance_info = self.get_futures_balance()
+                unrealized_pnl = balance_info.get("total_unrealized_pnl", 0)
+
+            # Calculate total daily PnL (matches Binance's display)
+            total_daily_pnl = today_realized_pnl + unrealized_pnl
 
             # Calculate win rate
             winning_trades = sum(1 for i in today_trades if float(i["income"]) > 0)
@@ -639,7 +653,9 @@ class BinanceClient:
             win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
 
             return {
-                "daily_realized_pnl": today_pnl,
+                "daily_realized_pnl": today_realized_pnl,
+                "unrealized_pnl": unrealized_pnl,
+                "total_daily_pnl": total_daily_pnl,
                 "trade_count": total_trades,
                 "winning_trades": winning_trades,
                 "losing_trades": total_trades - winning_trades,
@@ -649,6 +665,8 @@ class BinanceClient:
             print(f"Error fetching daily PnL: {e}")
             return {
                 "daily_realized_pnl": 0,
+                "unrealized_pnl": 0,
+                "total_daily_pnl": 0,
                 "trade_count": 0,
                 "winning_trades": 0,
                 "losing_trades": 0,

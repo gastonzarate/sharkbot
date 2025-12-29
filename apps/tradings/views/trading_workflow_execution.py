@@ -104,7 +104,7 @@ class TradingWorkflowExecutionViewSet(viewsets.ReadOnlyModelViewSet):
         # Calculate total daily PnL
         total_pnl = 0.0
         for execution in queryset.filter(status=TradingWorkflowExecution.Status.SUCCESS):
-            total_pnl += execution.daily_pnl.get("daily_realized_pnl", 0)
+            total_pnl += execution.daily_pnl.get("total_daily_pnl", 0)
 
         return Response(
             {

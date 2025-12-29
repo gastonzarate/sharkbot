@@ -78,7 +78,7 @@ graph TB
 
     subgraph BINANCE["🔗 BINANCE CLIENT"]
         BinanceAPI["Binance Futures API"]
-        MarketData["Market Data<br/>(Precio, RSI, MACD, EMA, ATR)"]
+        MarketData["Market Data<br/>(Precio, RSI, MACD, EMA, ATR)"] 
         OrderExecution["Order Execution"]
         AccountInfo["Account Info"]
     end
@@ -416,3 +416,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **⚠️ Disclaimer**: This software is for educational and research purposes. Cryptocurrency trading is risky and you could lose all your invested capital. Always do your own research and never invest more than you can afford to lose. The authors and contributors are not responsible for any financial losses incurred from using this software.
+
+
+
+Que cuando hable te hable de los ultimos registros

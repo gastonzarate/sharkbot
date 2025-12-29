@@ -138,7 +138,7 @@ class TradingWorkflowExecution(TimeStampedModel):
             "currencies": self.currencies,
             "total_balance": self.balance_info.get("total_wallet_balance", 0),
             "available_balance": self.balance_info.get("available_balance", 0),
-            "daily_pnl": self.daily_pnl.get("daily_realized_pnl", 0),
+            "daily_pnl": self.daily_pnl.get("total_daily_pnl", 0),
             "trade_count": self.daily_pnl.get("trade_count", 0),
             "win_rate": self.daily_pnl.get("win_rate", 0),
             "open_positions_count": len(self.open_positions),
@@ -155,7 +155,7 @@ class TradingWorkflowExecution(TimeStampedModel):
 
     def get_performance_summary(self) -> str:
         """Get formatted performance summary."""
-        pnl = self.daily_pnl.get("daily_realized_pnl", 0)
+        pnl = self.daily_pnl.get("total_daily_pnl", 0)
         trades = self.daily_pnl.get("trade_count", 0)
         win_rate = self.daily_pnl.get("win_rate", 0)
 

@@ -133,11 +133,14 @@ You currently have no open positions. **LOOK FOR ENTRY OPPORTUNITIES!**
 ## Daily Performance Summary
 
 **Today's Trading Performance:**
-- Realized PnL: ${{ daily_pnl.daily_realized_pnl }}
+- Realized PnL (Closed Trades): ${{ daily_pnl.daily_realized_pnl }}
+- Unrealized PnL (Open Positions): ${{ daily_pnl.unrealized_pnl }}
+- **Total Daily PnL: ${{ daily_pnl.total_daily_pnl }}** ⬅️ This matches Binance's display
 - Total Trades: {{ daily_pnl.trade_count }}
 - Winning Trades: {{ daily_pnl.winning_trades }}
 - Losing Trades: {{ daily_pnl.losing_trades }}
 - Win Rate: {{ daily_pnl.win_rate }}%
+
 
 {% if daily_pnl.trade_count > 0 %}
 **Performance-Based Adjustments:**
@@ -149,12 +152,14 @@ You currently have no open positions. **LOOK FOR ENTRY OPPORTUNITIES!**
 🔴 Poor performance - REDUCE position sizes by 50% until win rate improves, but KEEP TRADING - the only way to recover is to find winning trades
 {% endif %}
 
-{% if daily_pnl.daily_realized_pnl < 0 %}
+
+{% if daily_pnl.total_daily_pnl < 0 %}
 **LOSS RECOVERY PROTOCOL:**
 - Don't try to make it all back in one trade (revenge trading)
 - Focus on high-probability setups only
 - Use smaller positions until you get 2 consecutive winners
 {% endif %}
+
 {% endif %}
 
 ## Market Data Analysis

@@ -176,9 +176,12 @@ class TradingFuturesWorkflow(Workflow):
 
         print(f"✓ Found {len(open_positions)} open position(s)")
         print(
-            f"✓ Daily PnL: ${daily_pnl['daily_realized_pnl']:.2f} "
-            f"({daily_pnl['trade_count']} trades, {daily_pnl['win_rate']:.1f}% win rate)"
+            f"✓ Daily PnL: ${daily_pnl['total_daily_pnl']:.2f} "
+            f"(Realized: ${daily_pnl['daily_realized_pnl']:.2f}, "
+            f"Unrealized: ${daily_pnl['unrealized_pnl']:.2f}, "
+            f"{daily_pnl['trade_count']} trades, {daily_pnl['win_rate']:.1f}% win rate)"
         )
+
 
         balance_info = await ctx.store.get("balance_info")
 
@@ -224,7 +227,7 @@ class TradingFuturesWorkflow(Workflow):
         # Create agent and render prompt
         agent = Agent(
             prompt_name="trading_futures",
-            model=LLMModel.BEDROCK_CLAUDE_4_5_HAIKU,
+            model=LLMModel.BEDROCK_CLAUDE_4_5_SONNET,
         )
 
         # Prepare context for prompt rendering
