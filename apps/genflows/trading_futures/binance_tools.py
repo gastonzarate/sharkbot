@@ -1,6 +1,7 @@
 from llama_index.core.tools import FunctionTool
 from tradings.models import TradingOperation
 
+from services.backtest_service import BacktestService
 from services.binance_client import BinanceClient
 
 
@@ -17,6 +18,7 @@ class BinanceTools:
             binance_client (BinanceClient): An initialized BinanceClient instance.
         """
         self.binance_client = binance_client
+        self.backtest_service = BacktestService(binance_client)
 
     def list_tools(self) -> list[FunctionTool]:
         """
@@ -102,6 +104,72 @@ class BinanceTools:
                     "Consider partial exits to lock in profits while maintaining exposure. "
                     "Monitor market conditions and close positions if the original trade thesis is invalidated. "
                     "Avoid emotional decision-making - stick to your trading plan."
+                ),
+            ),
+            FunctionTool.from_defaults(
+                fn=self._backtest_strategy,
+                name="backtest_strategy",
+                description=(
+                    "Simula cómo habría funcionado una estrategia de trading "
+                    "basándose en condiciones de mercado similares en el pasado.\n\n"
+                    "⚠️ USA ESTA HERRAMIENTA ANTES de abrir una posición para validar "
+                    "que las condiciones actuales históricamente han sido rentables.\n\n"
+                    "PARÁMETROS:\n"
+                    "- currency: Base currency (ej: 'BTC', 'ETH'). NO incluir 'USDT'.\n"
+                    "- direction: 'LONG' o 'SHORT'\n"
+                    "- current_rsi: RSI actual (del market data)\n"
+                    "- current_macd: MACD actual (del market data)\n"
+                    "- current_price: Precio actual\n"
+                    "- current_ema_9: EMA(9) actual\n"
+                    "- current_funding_rate: Funding rate actual (opcional)\n"
+                    "- lookback_days: Días de historia a analizar (default: 7)\n"
+                    "- stop_loss_pct: % de stop loss a simular (default: 2.0)\n"
+                    "- take_profit_pct: % de take profit a simular (default: 4.0)\n\n"
+                    "RETORNA métricas para ayudar en la decisión:\n"
+                    "- win_rate: % de trades ganadores\n"
+                    "- avg_profit_pct: Ganancia promedio por trade\n"
+                    "- expectancy: Ganancia esperada por trade\n"
+                    "- profit_factor: Ratio ganancias/pérdidas\n"
+                    "- similar_setups_found: Cuántas condiciones similares se encontraron\n\n"
+                    "EJEMPLO DE USO:\n"
+                    "Antes de abrir LONG en BTC, llamar:\n"
+                    "backtest_strategy(currency='BTC', direction='LONG', "
+                    "current_rsi=28.5, current_macd=-150.2, current_price=105000, "
+                    "current_ema_9=104500, stop_loss_pct=2.0, take_profit_pct=4.0)\n\n"
+                    "Si win_rate < 50% o expectancy < 0, considera NO operar."
+                ),
+            ),
+            FunctionTool.from_defaults(
+                fn=self._backtest_strategy,
+                name="backtest_strategy",
+                description=(
+                    "Simula cómo habría funcionado una estrategia de trading "
+                    "basándose en condiciones de mercado similares en el pasado.\n\n"
+                    "⚠️ USA ESTA HERRAMIENTA ANTES de abrir una posición para validar "
+                    "que las condiciones actuales históricamente han sido rentables.\n\n"
+                    "PARÁMETROS:\n"
+                    "- currency: Base currency (ej: 'BTC', 'ETH'). NO incluir 'USDT'.\n"
+                    "- direction: 'LONG' o 'SHORT'\n"
+                    "- current_rsi: RSI actual (del market data)\n"
+                    "- current_macd: MACD actual (del market data)\n"
+                    "- current_price: Precio actual\n"
+                    "- current_ema_9: EMA(9) actual\n"
+                    "- current_funding_rate: Funding rate actual (opcional)\n"
+                    "- lookback_days: Días de historia a analizar (default: 7)\n"
+                    "- stop_loss_pct: % de stop loss a simular (default: 2.0)\n"
+                    "- take_profit_pct: % de take profit a simular (default: 4.0)\n\n"
+                    "RETORNA métricas para ayudar en la decisión:\n"
+                    "- win_rate: % de trades ganadores\n"
+                    "- avg_profit_pct: Ganancia promedio por trade\n"
+                    "- expectancy: Ganancia esperada por trade\n"
+                    "- profit_factor: Ratio ganancias/pérdidas\n"
+                    "- similar_setups_found: Cuántas condiciones similares se encontraron\n\n"
+                    "EJEMPLO DE USO:\n"
+                    "Antes de abrir LONG en BTC, llamar:\n"
+                    "backtest_strategy(currency='BTC', direction='LONG', "
+                    "current_rsi=28.5, current_macd=-150.2, current_price=105000, "
+                    "current_ema_9=104500, stop_loss_pct=2.0, take_profit_pct=4.0)\n\n"
+                    "Si win_rate < 50% o expectancy < 0, considera NO operar."
                 ),
             ),
         ]
@@ -284,3 +352,69 @@ class BinanceTools:
             operation.error_message = str(e)
             operation.save()
             raise e
+
+    def _backtest_strategy(
+        self,
+        currency: str,
+        direction: str,
+        current_rsi: float,
+        current_macd: float,
+        current_price: float,
+        current_ema_9: float,
+        current_funding_rate: float = 0.0,
+        current_atr: float = None,
+        lookback_days: int = 7,
+        stop_loss_pct: float = 2.0,
+        take_profit_pct: float = 4.0,
+    ) -> dict:
+        """
+        Wrapper for BacktestService.backtest_strategy().
+
+        Args:
+            currency: Base currency symbol (e.g., 'BTC', 'ETH').
+            direction: Trade direction ('LONG' or 'SHORT').
+            current_rsi: Current RSI value from market data.
+            current_macd: Current MACD value from market data.
+            current_price: Current price.
+            current_ema_9: Current EMA(9) value.
+            current_funding_rate: Current funding rate (optional).
+            current_atr: Current ATR value (optional).
+            lookback_days: Days of historical data to analyze (default: 7).
+            stop_loss_pct: Stop loss percentage to simulate (default: 2.0).
+            take_profit_pct: Take profit percentage to simulate (default: 4.0).
+
+        Returns:
+            dict: Backtest results with performance metrics.
+
+        Example:
+            >>> _backtest_strategy(
+            ...     currency="BTC",
+            ...     direction="LONG",
+            ...     current_rsi=28.5,
+            ...     current_macd=-150.2,
+            ...     current_price=105000,
+            ...     current_ema_9=104500,
+            ...     lookback_days=7,
+            ...     stop_loss_pct=2.0,
+            ...     take_profit_pct=4.0
+            ... )
+        """
+        current_conditions = {
+            "rsi": current_rsi,
+            "macd": current_macd,
+            "price": current_price,
+            "ema_9": current_ema_9,
+            "funding_rate": current_funding_rate,
+        }
+
+        if current_atr is not None:
+            current_conditions["atr"] = current_atr
+
+        return self.backtest_service.backtest_strategy(
+            currency=currency,
+            direction=direction,
+            current_conditions=current_conditions,
+            lookback_days=lookback_days,
+            stop_loss_pct=stop_loss_pct,
+            take_profit_pct=take_profit_pct,
+        )

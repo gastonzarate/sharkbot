@@ -1,6 +1,10 @@
 import logging
+import os
 
 from django.apps import AppConfig
+from django.conf import settings
+
+from apscheduler.schedulers.background import BackgroundScheduler
 
 logger = logging.getLogger(__name__)
 
@@ -15,17 +19,11 @@ class TradingsConfig(AppConfig):
         Initialize APScheduler when Django starts.
         This will run the trading workflow every minute.
         """
-        # Import here to avoid AppRegistryNotReady exception
-        # Only run scheduler in the main process (not in runserver reloader)
-        import os
-        from django.conf import settings
-
-        from apscheduler.schedulers.background import BackgroundScheduler
-
         # Prevent scheduler from starting twice in Django's development server
         # The reloader creates a parent process that we don't want to run the scheduler in
         if os.environ.get("RUN_MAIN") != "true":
             logger.info("⏭️  Skipping scheduler initialization (not in main process)")
+        if not settings.DEBUG:
             return
 
         # if settings.DEBUG:
@@ -37,12 +35,12 @@ class TradingsConfig(AppConfig):
 
         # Schedule the trading workflow to run every custom minutes
         from datetime import datetime, timezone
-        
+
         minutes = 5  # Increased from 1 to ensure workflow completes before next run
         scheduler.add_job(
             run_trading_workflow,
             "interval",
-            minutes=minutes,
+            minutes=10,
             id="trading_futures_workflow",
             name="Trading Futures Workflow",
             replace_existing=True,
